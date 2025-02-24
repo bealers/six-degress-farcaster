@@ -1,26 +1,31 @@
 {
   "name": "six-degrees-farcaster",
-  "version": "1.0.0",
-  "description": "A Farcaster Frame that finds the shortest social path between any two Farcaster users",
-  "main": "dist/index.js",
+  "version": "0.1.0",
+  "description": "Find the shortest social path between any two Farcaster users",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "NODE_ENV=development tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "lint": "eslint src --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "generate-images": "tsx src/scripts/generate-images.ts"
+    "start": "NODE_ENV=production node dist/index.js",
+    "generate-images": "tsx src/scripts/generate-images.ts",
+    "test": "jest"
   },
   "dependencies": {
-    "@hono/node-server": "1.4.1",
-    "hono": "4.0.5",
-    "sharp": "0.33.2",
-    "dotenv": "16.4.1"
+    "@hono/node-server": "^1.13.8",
+    "@neynar/nodejs-sdk": "^2.13.1",
+    "dotenv": "^16.4.1",
+    "hono": "^4.0.0",
+    "sharp": "^0.33.2",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
-    "@types/node": "20.11.5",
-    "typescript": "5.3.3",
-    "tsx": "4.7.0"
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.11.16",
+    "@types/sharp": "^0.31.1",
+    "@types/sqlite3": "^3.1.11",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
-} 
+}

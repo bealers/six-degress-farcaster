@@ -1,15 +1,19 @@
 import { serve } from '@hono/node-server';
-import { config } from 'dotenv';
+import { Hono } from 'hono';
+import { serveStatic } from '@hono/node-server/serve-static';
 import frame from './api/frame.js';
+import { config } from './config.js';
 
-// Load environment variables
-config();
+const app = new Hono();
 
-const port = process.env.PORT || 3000;
+// Serve static files from the public directory
+app.use('/static/*', serveStatic({ root: './public' }));
 
-console.log(`Server is running on port ${port}`);
+// Mount the frame routes
+app.route('/', frame);
 
+console.log(`Starting server on port ${config.port}...`);
 serve({
-  fetch: frame.fetch,
-  port: Number(port)
-}); 
+  fetch: app.fetch,
+  port: config.port
+});

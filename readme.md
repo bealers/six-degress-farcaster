@@ -3,6 +3,32 @@
 https://docs.farcaster.xyz/developers/frames/v2/spec 
 https://github.com/farcasterxyz/frames-v2-demo 
 
+### Farcaster Frame Issues
+- Frame loads but input field for username is not displaying
+- "Find Connection" button leads to loading state without hitting `/search` endpoint
+- Frame metadata structure needs to maintain consistent version string "next"
+- Avoiding new Farcaster v2 spec format as it breaks functionality
+- Need to maintain existing metadata format for stability
+
+### Neynar Service Integration
+1. **API Version Status**
+   - Using Neynar SDK v2 (`@neynar/nodejs-sdk@latest`)
+   - Configured with proper API key initialization
+
+2. **Method Updates**
+   - Updated to v2 SDK methods:
+     - `fetchUserFollowers`
+     - `fetchUserFollowing`
+     - `lookupUserByUsername`
+     - `fetchBulkUsers`
+
+3. **Known Issues**
+   - Type Definition Mismatches:
+     - SDK's `HydratedFollower` type missing expected properties
+     - TypeScript validation errors despite functional code
+   - Limited documentation for v2 migration
+   - Functionality works but type safety compromised
+
 A Farcaster Frame v2 that finds the shortest social path between any two Farcaster users. The project implements a simplified version of the "six degrees of separation" concept for the Farcaster social graph.
 
 ## Technical Approach
@@ -209,3 +235,37 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 MIT
+
+type FrameContext = {
+  fid: number;          // Searcher's FID
+  username?: string;    // Searcher's username
+  inputText?: string;   // Text from input field
+  state?: string;      // For maintaining state between frames
+}
+
+interface NeynarClient {
+  getFollowers(fid: number): Promise<number[]>;
+  getFollowing(fid: number): Promise<number[]>;
+  getUserByUsername(username: string): Promise<{ fid: number }>;
+}
+
+CREATE TABLE searches (
+  id INTEGER PRIMARY KEY,
+  searcher_fid INTEGER,
+  from_fid INTEGER,
+  to_fid INTEGER,
+  path_json TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE connections (
+  from_fid INTEGER,
+  to_fid INTEGER,
+  last_updated TIMESTAMP,
+  PRIMARY KEY (from_fid, to_fid)
+);
+
+// Update connection graph periodically
+setInterval(async () => {
+  await pathFinder.updateConnectionGraph();
+}, 60 * 60 * 1000); // Every hour

@@ -1,146 +1,165 @@
 import { Hono } from 'hono';
-import type { Context } from 'hono';
-import { serveStatic } from '@hono/node-server/serve-static';
+import { NeynarService } from '../services/neynar.js';
+import { config } from '../config.js';
+import { generateInitialImage } from '../utils/image.js';
 
 const app = new Hono();
-
-// Serve static files (for images)
-app.use('/static/*', serveStatic({ root: './public' }));
+const neynar = new NeynarService();
 
 // Helper function to clean URLs
 function cleanUrl(url: string): string {
-  return url.replace(/([^:]\/)\/+/g, "$1");
+  return url.replace(/([^:])\/{2,}/g, "$1/");
 }
 
-// Initial frame endpoint
-app.get('/', (c: Context) => {
-  const baseUrl = process.env.HOST_URL || `https://${c.req.header('host')}`;
+app.get('/', async (c) => {
+  console.log('Initial frame loaded');
+  //const headers = Object.fromEntries(c.req.raw.headers.entries());
+  //console.log('Request headers:', headers);
   
   const frameMetadata = {
     version: "next",
-    imageUrl: cleanUrl(`${baseUrl}/static/initial.png`),
+    imageUrl: cleanUrl(`${config.hostUrl}/static/initial.png`),
     button: {
       title: "Find Connection",
       action: {
         type: "launch_frame",
         name: "Six Degrees of Farcaster",
-        url: cleanUrl(`${baseUrl}/search`),
-        splashImageUrl: cleanUrl(`${baseUrl}/static/splash.png`),
-        splashBackgroundColor: "#000000"
-      }
-    },
-    input: {
-      text: "Enter first username"
-    }
-  };
-
-  return c.html(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Six Degrees of Farcaster</title>
-        <meta property="og:title" content="Six Degrees of Farcaster" />
-        <meta property="og:description" content="Find the shortest path between any two Farcaster users" />
-        <meta property="og:image" content="${cleanUrl(`${baseUrl}/static/initial.png`)}" />
-        <meta name="fc:frame" content='${JSON.stringify(frameMetadata)}' />
-        <meta name="fc:frame:image" content="${cleanUrl(`${baseUrl}/static/initial.png`)}" />
-        <meta name="fc:frame:image:aspect_ratio" content="1.91:1" />
-      </head>
-      <body>
-        <h1>Six Degrees of Farcaster</h1>
-        <p>Find the shortest path between any two Farcaster users.</p>
-      </body>
-    </html>
-  `);
-});
-
-// Search endpoint - handles the username input
-app.post('/search', async (c: Context) => {
-  const baseUrl = process.env.HOST_URL || `https://${c.req.header('host')}`;
-  const data = await c.req.formData();
-  const firstUser = data.get('text');
-  
-  const frameMetadata = {
-    version: "next",
-    imageUrl: cleanUrl(`${baseUrl}/static/search.png`),
-    button: {
-      title: "Search",
-      action: {
-        type: "launch_frame",
-        name: "Six Degrees of Farcaster",
-        url: cleanUrl(`${baseUrl}/result`),
-        splashImageUrl: cleanUrl(`${baseUrl}/static/splash.png`),
-        splashBackgroundColor: "#000000"
-      }
-    },
-    input: {
-      text: "Enter second username"
-    },
-    state: { firstUser }
-  };
-
-  return c.html(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Six Degrees of Farcaster - Search</title>
-        <meta property="og:title" content="Six Degrees of Farcaster" />
-        <meta property="og:description" content="Enter the second username" />
-        <meta property="og:image" content="${cleanUrl(`${baseUrl}/static/search.png`)}" />
-        <meta name="fc:frame" content='${JSON.stringify(frameMetadata)}' />
-        <meta name="fc:frame:image" content="${cleanUrl(`${baseUrl}/static/search.png`)}" />
-        <meta name="fc:frame:image:aspect_ratio" content="1.91:1" />
-      </head>
-      <body>
-        <h1>Enter Second Username</h1>
-        <p>First user: ${firstUser}</p>
-      </body>
-    </html>
-  `);
-});
-
-// Result endpoint - shows the connection path
-app.post('/result', async (c: Context) => {
-  const baseUrl = process.env.HOST_URL || `https://${c.req.header('host')}`;
-  const data = await c.req.formData();
-  const secondUser = data.get('text');
-  const stateStr = data.get('state');
-  const state = stateStr ? JSON.parse(stateStr as string) : {};
-  const firstUser = state.firstUser;
-
-  const frameMetadata = {
-    version: "next",
-    imageUrl: cleanUrl(`${baseUrl}/static/result.png`),
-    button: {
-      title: "Share Result",
-      action: {
-        type: "launch_frame",
-        name: "Six Degrees of Farcaster",
-        url: cleanUrl(`${baseUrl}/share`),
-        splashImageUrl: cleanUrl(`${baseUrl}/static/splash.png`),
+        url: cleanUrl(`${config.hostUrl}/search`),
+        splashImageUrl: cleanUrl(`${config.hostUrl}/static/splash.png`),
         splashBackgroundColor: "#000000"
       }
     }
   };
 
-  return c.html(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Six Degrees of Farcaster - Result</title>
-        <meta property="og:title" content="Six Degrees of Farcaster" />
-        <meta property="og:description" content="View the connection path" />
-        <meta property="og:image" content="${cleanUrl(`${baseUrl}/static/result.png`)}" />
-        <meta name="fc:frame" content='${JSON.stringify(frameMetadata)}' />
-        <meta name="fc:frame:image" content="${cleanUrl(`${baseUrl}/static/result.png`)}" />
-        <meta name="fc:frame:image:aspect_ratio" content="1.91:1" />
-      </head>
-      <body>
-        <h1>Results</h1>
-        <p>Finding connection between ${firstUser} and ${secondUser}...</p>
-      </body>
-    </html>
-  `);
+  return c.html(`<!DOCTYPE html>
+<html>
+  <head>
+    <title>Six Degrees of Farcaster</title>
+    <meta property="og:title" content="Six Degrees of Farcaster" />
+    <meta property="og:description" content="Find the shortest path between any two Farcaster users" />
+    <meta property="og:image" content="${cleanUrl(`${config.hostUrl}/static/initial.png`)}" />
+    <meta name="fc:frame" content='${JSON.stringify(frameMetadata)}' />
+    <meta name="fc:frame:image" content="${cleanUrl(`${config.hostUrl}/static/initial.png`)}" />
+    <meta name="fc:frame:image:aspect_ratio" content="1.91:1" />
+    <meta name="fc:frame:input:text" content="Enter first username" />
+  </head>
+  <body>
+    <h1>Six Degrees of Farcaster</h1>
+    <p>Find the shortest path between any two Farcaster users.</p>
+  </body>
+</html>`);
 });
 
-export default app; 
+app.post('/search', async (c) => {
+  console.log('Search endpoint hit');
+  const headers = Object.fromEntries(c.req.raw.headers.entries());
+  console.log('Request headers:', headers);
+  const data = await c.req.formData();
+  console.log('Form data:', Object.fromEntries(data.entries()));
+  const firstUser = data.get('text')?.toString() || '';
+
+  if (!firstUser) {
+    const frameMetadata = {
+      version: "next",
+      imageUrl: cleanUrl(`${config.hostUrl}/static/error.png`),
+      button: {
+        title: "Try Again",
+        action: {
+          type: "launch_frame",
+          name: "Six Degrees of Farcaster",
+          url: cleanUrl(`${config.hostUrl}`),
+          splashImageUrl: cleanUrl(`${config.hostUrl}/static/splash.png`),
+          splashBackgroundColor: "#000000"
+        }
+      }
+    };
+
+    return c.html(`<!DOCTYPE html>
+<html>
+  <head>
+    <title>Error</title>
+    <meta property="og:title" content="Error" />
+    <meta property="og:image" content="${cleanUrl(`${config.hostUrl}/static/error.png`)}" />
+    <meta name="fc:frame" content='${JSON.stringify(frameMetadata)}' />
+    <meta name="fc:frame:image" content="${cleanUrl(`${config.hostUrl}/static/error.png`)}" />
+    <meta name="fc:frame:image:aspect_ratio" content="1.91:1" />
+  </head>
+  <body>
+    <p>Please enter a username</p>
+  </body>
+</html>`);
+  }
+
+  try {
+    console.log('Looking up user:', firstUser);
+    const user = await neynar.getUserByUsername(firstUser);
+    console.log('User found:', user.fid);
+    
+    const frameMetadata = {
+      version: "next",
+      imageUrl: cleanUrl(`${config.hostUrl}/static/search.png`),
+      button: {
+        title: "Search",
+        action: {
+          type: "launch_frame",
+          name: "Six Degrees of Farcaster",
+          url: cleanUrl(`${config.hostUrl}/result`),
+          splashImageUrl: cleanUrl(`${config.hostUrl}/static/splash.png`),
+          splashBackgroundColor: "#000000"
+        }
+      },
+      input: {
+        text: "Enter second username"
+      },
+      state: { firstUser, from_fid: user.fid }
+    };
+
+    return c.html(`<!DOCTYPE html>
+<html>
+  <head>
+    <title>Enter Second Username</title>
+    <meta property="og:title" content="Enter Second Username" />
+    <meta property="og:image" content="${cleanUrl(`${config.hostUrl}/static/search.png`)}" />
+    <meta name="fc:frame" content='${JSON.stringify(frameMetadata)}' />
+    <meta name="fc:frame:image" content="${cleanUrl(`${config.hostUrl}/static/search.png`)}" />
+    <meta name="fc:frame:image:aspect_ratio" content="1.91:1" />
+  </head>
+  <body>
+    <p>First user: ${firstUser}</p>
+  </body>
+</html>`);
+  } catch (error) {
+    console.error('Error looking up user:', error);
+    const frameMetadata = {
+      version: "next",
+      imageUrl: cleanUrl(`${config.hostUrl}/static/error.png`),
+      button: {
+        title: "Try Again",
+        action: {
+          type: "launch_frame",
+          name: "Six Degrees of Farcaster",
+          url: cleanUrl(`${config.hostUrl}`),
+          splashImageUrl: cleanUrl(`${config.hostUrl}/static/splash.png`),
+          splashBackgroundColor: "#000000"
+        }
+      }
+    };
+
+    return c.html(`<!DOCTYPE html>
+<html>
+  <head>
+    <title>Error</title>
+    <meta property="og:title" content="Error" />
+    <meta property="og:image" content="${cleanUrl(`${config.hostUrl}/static/error.png`)}" />
+    <meta name="fc:frame" content='${JSON.stringify(frameMetadata)}' />
+    <meta name="fc:frame:image" content="${cleanUrl(`${config.hostUrl}/static/error.png`)}" />
+    <meta name="fc:frame:image:aspect_ratio" content="1.91:1" />
+  </head>
+  <body>
+    <p>User not found. Please try again.</p>
+  </body>
+</html>`);
+  }
+});
+
+export default app;
