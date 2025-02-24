@@ -1,0 +1,26 @@
+{
+  "name": "six-degrees-farcaster",
+  "version": "1.0.0",
+  "description": "A Farcaster Frame that finds the shortest social path between any two Farcaster users",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "generate-images": "tsx src/scripts/generate-images.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "1.4.1",
+    "hono": "4.0.5",
+    "sharp": "0.33.2",
+    "dotenv": "16.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.5",
+    "typescript": "5.3.3",
+    "tsx": "4.7.0"
+  }
+} 
