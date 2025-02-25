@@ -1,64 +1,44 @@
 # Six Degrees of Farcaster
 
-https://docs.farcaster.xyz/developers/frames/v2/spec 
-https://github.com/farcasterxyz/frames-v2-demo 
+A Farcaster Frame v2 application that finds the shortest social path between Farcaster users. This project implements the "six degrees of separation" concept for the Farcaster social graph, allowing users to discover their connections to notable personalities and other users in the network.
 
-### Farcaster Frame Issues
-- Frame loads but input field for username is not displaying
-- "Find Connection" button leads to loading state without hitting `/search` endpoint
-- Frame metadata structure needs to maintain consistent version string "next"
-- Avoiding new Farcaster v2 spec format as it breaks functionality
-- Need to maintain existing metadata format for stability
+## Current Implementation
 
-### Neynar Service Integration
-1. **API Version Status**
-   - Using Neynar SDK v2 (`@neynar/nodejs-sdk@latest`)
-   - Configured with proper API key initialization
+1. In-feed frame shows a notable Farcaster user (e.g., Vitalik Buterin) with the prompt "How connected are you?"
+2. User clicks button → Opens full frame showing a selection of famous Farcaster users
+3. User selects a personality → App calculates connection path between user and selected personality
+4. Result shows: "You're X degrees away from @famous_person through @user1 → @user2"
+5. Share button generates a new frame: "I'm X degrees from @famous_person! What about you?"
 
-2. **Method Updates**
-   - Updated to v2 SDK methods:
-     - `fetchUserFollowers`
-     - `fetchUserFollowing`
-     - `lookupUserByUsername`
-     - `fetchBulkUsers`
+## Technical Stack
 
-3. **Known Issues**
-   - Type Definition Mismatches:
-     - SDK's `HydratedFollower` type missing expected properties
-     - TypeScript validation errors despite functional code
-   - Limited documentation for v2 migration
-   - Functionality works but type safety compromised
-
-A Farcaster Frame v2 that finds the shortest social path between any two Farcaster users. The project implements a simplified version of the "six degrees of separation" concept for the Farcaster social graph.
-
-## Technical Approach
-
-This project uses:
-- TypeScript as a learning exercise
-- Hono for lightweight HTTP server and Frame endpoints
-- Sharp for image generation
-- Frame v2 metadata for Farcaster integration
-
-### Frame Flow
-1. Initial Frame: Input field for first username
-2. Second Frame: Input field for second username
-3. Result Frame: Shows the connection path between users
-4. Share Frame: Option to share the result
+- **TypeScript** - As vanilla as possible whislt i learn, no frameworks
+- **Hono** - Lightweight HTTP server and frame endpoint handling
+- **Handlebars** - Templating engine for HTML generation
+- **Neynar SDK** - For access to the Farcaster social graph
 
 ## Project Structure
+
 ```
 src/
-  ├── api/          # Frame endpoints
-  ├── services/     # Business logic for path finding
+  ├── api/          # Frame endpoints and route handlers
+  ├── services/     # Business logic for user connections
+  ├── templates/    # Handlebars templates for frame HTML
+  ├── styles/       # CSS styling
   ├── types/        # TypeScript interfaces
-  ├── utils/        # Helper functions
-  ├── __tests__/    # Test files
+  ├── utils/        # Helper functions and template rendering
   └── index.ts      # Server entry point
+public/
+  ├── static/       # Static images and assets
+  └── .well-known/  # Farcaster manifest files
 ```
 
 ## Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/six-degrees-farcaster.git
+
 # Install dependencies
 npm install
 
@@ -67,9 +47,11 @@ cp .env.example .env
 ```
 
 ## Environment Variables
+
 ```env
 PORT=3000
-HOST_URL=http://localhost:3000  # Your public URL when deployed
+HOST_URL=https://your-public-url.com  # Your public URL when deployed
+NEYNAR_API_KEY=your-neynar-api-key    # Required for Farcaster API access
 ```
 
 ## Development
@@ -88,145 +70,114 @@ npm run start
 ## Testing with Frame Developer Tools
 
 1. Start your local server: `npm run dev`
-2. Set up a tunnel to your local server using `localhost.run`:
+2. Set up a tunnel to your local server using one of these tools:
    - `cloudflared` (recommended for Linux)
    - `localhost.run`: `ssh -R 80:localhost:3000 localhost.run`
-   - `ngrok` (if DNS resolution works correctly)
+   - `ngrok`: `ngrok http 3000`
 3. Update your `.env` file with the tunnel URL as `HOST_URL`
-4. Visit [Warpcast Frame Developer Tools](https://warpcast.com/~/developers/frames)
-5. Enter your tunnel URL in the "Preview Frame Embed URL" field (not the Launch Frame field)
-6. Test your frame
+4. Visit [Warpcast Frame Validator](https://warpcast.com/~/developers/frames)
+5. Enter your tunnel URL to test your frame
 
-### Tips
+## Farcaster Frames v2 Implementation
 
-- When using `localhost.run`, accept the SSH key on first connection with:
-  ```bash
-  ssh -R 80:localhost:3000 localhost.run -o StrictHostKeyChecking=no
-  ```
+This project follows the Farcaster Frames v2 specification which requires specific metadata tags:
 
-## Frame v2 Metadata Implementation
-
-The frame uses v2 metadata tags following the official specification:
-
+### In-feed Frame (embedded in casts)
 ```html
-<meta name="fc:frame" content="<stringified FrameEmbed JSON>" />
-<meta property="fc:frame:image" content="${baseUrl}/static/image.png" />
-<meta property="fc:frame:input:text" content="Enter username" />
-<meta property="fc:frame:button:1" content="Find Connection" />
-<meta property="fc:frame:post_url" content="${baseUrl}/search" />
+<meta name="fc:frame" content="{...JSON object...}" />
 ```
 
-Key implementation details:
-- Uses proper JSON stringification for frame metadata
-- Ensures clean URL formatting (no double slashes)
-- Maintains state between frames using `fc:frame:state`
-- Implements proper button actions and input fields
-
-## API Endpoints
-
-- `GET /`: Initial frame with first username input
-- `POST /search`: Handle first username, request second username
-- `POST /result`: Show connection path between users
-- `POST /share`: Share result
-
-## Image Generation
-
-Frame images are generated dynamically using Sharp:
-- Initial welcome screen (1200x630)
-- Search interface
-- Connection path visualization
-- Share card
-
-Images use:
-- SVG text rendering for clarity
-- System-ui font family
-- Centered text layout
-- White text on dark background
-
-## Development Notes
-
-- Frame responses include complete HTML structure with body tags
-- No client-side JavaScript needed
-- Images generated on-demand
-- State passed through fc:frame:state
-- URLs cleaned to prevent double slashes
-
-## Testing
-
-```bash
-npm test
+### Full Frame (after clicking in-feed button)
+```html
+<meta name="fc:frame" content="next" />
+<meta name="fc:frame:image" content="https://..." />
+<meta name="fc:frame:input:text" content="Enter username" />
+<meta name="fc:frame:button:1" content="Find Connection" />
+<meta name="fc:frame:post_url" content="https://..." />
 ```
+
+## Farcaster Frames v2 Inconsistencies and Issues
+
+During development, we encountered several inconsistencies and issues with the Farcaster Frames v2 specification:
+
+1. **Version String Sensitivity**: 
+   - The version MUST be exactly `"next"` (not `"vNext"` or other variations)
+   - This must be consistent between all metadata tags and JSON files (.well-known/farcaster.json)
+   
+2. **HTML Escaping Issues**:
+   - Frame metadata must NOT be HTML-escaped when rendered
+   - When using templating engines like Handlebars, you must use triple braces `{{{frameMetadata}}}` to prevent escaping
+   
+3. **Metadata Format Differences**:
+   - In-feed frames require stringified JSON format with all properties in one meta tag
+   - Full frames use separate meta tags for each property
+   
+4. **Action Type Requirements**:
+   - In-feed frame buttons MUST use `"type": "launch_frame"` exactly
+   - Full frame buttons use different action types
+
+5. **Image Rendering Inconsistencies**:
+   - Images defined in metadata may render differently across clients
+   - We needed to add multiple fallback mechanisms for images
+   
+6. **Configuration File Consistency**:
+   - The `.well-known/farcaster.json` manifest file must match the frame metadata version
+   
+7. **Debugging Challenges**:
+   - Error messages from the validator are not always clear
+   - `NO FRAME EMBED FOUND` error can have multiple causes:
+     - HTML escaping issues
+     - Version inconsistency
+     - Improper meta tag format
+     - Issues with JSON structure
+
+8. **Client-Specific Behaviors**:
+   - Different Farcaster clients may interpret the spec differently
+   - Testing across multiple clients is essential
+
+### Comparing with amp.fun
+
+When comparing our implementation with amp.fun (a working example), we identified these key differences:
+
+- amp.fun uses `"action": "post"` for button actions in full frames
+- They maintain strict version consistency ("next") across all metadata
+- Their inline images use specific styling for reliable rendering
+- They implement proper fallback mechanisms for images
+
+## Current Status and Known Issues
+
+- ✅ In-feed frame BROKEN with hours wasted
+- ✅ Full frame opens with famous personalities selection
+- ✅ Connection calculation works for selected personalities
+- ❌ Custom search functionality currently broken
+- ❌ Some image rendering issues on certain clients
 
 ## Future Enhancements
-- Expand to deeper connections (3+ degrees)
-- Add daily challenges
-- Implement streak tracking
-- Add on-chain connection discovery
-- Enhanced path visualization
-- Community statistics
 
-## Current Status
+1. **Improved User Connection Logic**:
+   - Enhanced path finding algorithm
+   - Support for deeper connections (3+ degrees)
+   - Multiple path discovery
 
-The project currently implements:
-- Frame v2 spec compliance with proper metadata
-- Basic frame flow (initial → search → result)
-- Image generation pipeline using Sharp
-- Development environment with localhost.run tunneling
-- Basic project structure and TypeScript setup
+2. **Enhanced User Experience**:
+   - Better error handling
+   - Loading states
+   - More robust image rendering
 
-## Roadmap
+3. **Additional Features**:
+   - Path strength indicators
+   - Most connected users leaderboard
+   - Common interest highlighting
 
-### 1. Data Storage Implementation
-We plan to implement data storage using Turso (SQLite) for:
-- Simple setup and maintenance
-- Graph-like data storage
-- Edge function compatibility
-- Easy migration path to other solutions
+4. **Performance Optimizations**:
+   - Path caching
+   - Background graph updates
 
-Alternative options considered:
-- PlanetScale (MySQL)
-- Supabase (PostgreSQL)
-- Upstash (Redis)
+## Resources
 
-### 2. Farcaster Integration
-Planned features:
-- Neynar API integration
-- Social graph data collection
-- Regular follower relationship updates
-- Efficient caching layer
-
-### 3. Enhanced Image Generation
-Improvements to result visualization:
-- Visual connection path representation
-- Profile picture integration
-- Degree count display
-- Shareable format optimization
-
-### 4. Future Enhancements
-
-#### Performance
-- Path caching implementation
-- Background graph updates
-- Edge computing optimization
-
-#### Analytics
-- Popular connection tracking
-- Historical path storage
-- Usage statistics generation
-
-#### Features
-- Multiple path discovery
-- Path strength indicators
-- Common interest highlighting
-- Daily challenges
-- Most connected users leaderboard
-
-#### User Experience
-- Robust error handling
-- Loading state management
-- Invalid username handling
-- Rate limiting implementation
-- Privacy controls
+- [Farcaster Frames v2 Specification](https://docs.farcaster.xyz/developers/frames/v2/spec)
+- [Farcaster Frames v2 Demo Repository](https://github.com/farcasterxyz/frames-v2-demo)
+- [Warpcast Frame Validator](https://warpcast.com/~/developers/frames)
 
 ## Contributing
 
@@ -235,37 +186,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 MIT
-
-type FrameContext = {
-  fid: number;          // Searcher's FID
-  username?: string;    // Searcher's username
-  inputText?: string;   // Text from input field
-  state?: string;      // For maintaining state between frames
-}
-
-interface NeynarClient {
-  getFollowers(fid: number): Promise<number[]>;
-  getFollowing(fid: number): Promise<number[]>;
-  getUserByUsername(username: string): Promise<{ fid: number }>;
-}
-
-CREATE TABLE searches (
-  id INTEGER PRIMARY KEY,
-  searcher_fid INTEGER,
-  from_fid INTEGER,
-  to_fid INTEGER,
-  path_json TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE connections (
-  from_fid INTEGER,
-  to_fid INTEGER,
-  last_updated TIMESTAMP,
-  PRIMARY KEY (from_fid, to_fid)
-);
-
-// Update connection graph periodically
-setInterval(async () => {
-  await pathFinder.updateConnectionGraph();
-}, 60 * 60 * 1000); // Every hour

@@ -1,9 +1,100 @@
 ---
-description: Generatg farcaster frame codein tyescript
-globs: 
-alwaysApply: false
+description: Rules for implementing Farcaster Frames v2
+globs: src/**/*frame*.{ts,js},src/api/*.{ts,js},src/utils/*.{ts,js}
+alwaysApply: true
 ---
+# Farcaster Frames v2 Implementation Rules
 
-# Your rule content
 
-- see @docs
+A frame URL must have a FrameEmbed in a serialized form in the fc:frame meta tag in the HTML <head>. 
+When this URL is rendered in a cast, the image is displayed in a 3:2 ratio with a button underneath. 
+Clicking the button will open an app frame to the provided action url and use the splash page to 
+animate the transition.
+
+## CRITICAL VERSION REQUIREMENT
+- **ALWAYS use `"next"` as the version string in ALL frame metadata**
+- **NEVER use "vNext" - this will break your frames**
+
+## Meta Tag Format Requirements
+- In-feed frames (embedded in casts):
+  - Use JSON stringified format: `<meta name="fc:frame" content='${JSON.stringify(embedJson)}' />`
+  - The `embedJson` must include the exact structure defined in the v2 spec
+  
+- Full frames (after clicking in-feed button):
+  - Example: `<meta name="fc:frame" content="next" />`
+
+## Key Implementation Rules
+1. OpenGraph tags use `property` attribute: `<meta property="og:title" content="..." />`
+2. Farcaster Frame tags use `name` attribute: `<meta name="fc:frame" content="..." />`
+3. In-feed frame button action MUST be type `"launch_frame"`
+4. Full frames MUST include proper post_url for button actions
+
+## Tag Consistency
+- Ensure ALL frame meta tags use the same version string ("next")
+- Do not mix meta tag formats between versions
+
+## Required Fields for In-Feed Frames
+```javascript
+{
+  version: "next",  // CRITICAL: Must be "next", NOT "vNext"
+  imageUrl: "...",  // Must be 3:2 aspect ratio and < 10MB
+  button: {
+    title: "...",   // Button text (32 char max)
+    action: {
+      type: "launch_frame",  // MUST be this exact value
+      name: "...",           // App name (32 char max)
+      url: "...",            // Frame launch URL
+      splashImageUrl: "...", // 200x200px splash image
+      splashBackgroundColor: "#..." // Hex color code
+    }
+  }
+}
+```
+
+## Documentation Reference
+- Definitive v2 specification: https://docs.farcaster.xyz/developers/frames/v2/spec
+- Working example repository: https://github.com/farcasterxyz/frames-v2-demo
+
+## Troubleshooting Common Issues
+- Frame loads but breaks when clicking buttons → Check version string consistency
+- Frame doesn't render at all → Validate meta tag format and required fields
+- Frame doesn't launch → Verify launch_frame action type and URL
+- Visual issues → Check image aspect ratios and file sizes
+
+## Testing
+Always validate your frames with:
+- Warpcast Frame Validator tool
+- Test on multiple Farcaster clients
+- Verify all user interaction flows
+
+## Implementation Reference
+```typescript
+// In-feed frame (embed in cast)
+const embedJson = {
+  version: "next",  // IMPORTANT: Use "next", NOT "vNext"
+  imageUrl: frameMetadata.imageUrl,
+  button: {
+    title: frameMetadata.button.title,
+    action: {
+      type: "launch_frame",
+      name: "Six Degrees of Farcaster",
+      url: frameMetadata.button.action.url,
+      splashImageUrl: cleanUrl(`${config.hostUrl}/static/splash.png`),
+      splashBackgroundColor: "#191919"
+    }
+  }
+};
+frameEmbed = `<meta name="fc:frame" content='${JSON.stringify(embedJson)}' />`;
+
+// Full frame (opens after clicking in-feed button)
+frameEmbed = `
+<meta name="fc:frame" content="next" />  // IMPORTANT: Use "next", NOT "vNext"
+<meta name="fc:frame:image" content="${frameMetadata.imageUrl}" />
+${frameMetadata.input ? `<meta name="fc:frame:input:text" content="${frameMetadata.input.text}" />` : ''}
+// Button and other meta tags follow...
+`;
+``` 
+
+
+[Definitive V2 docs]{https://docs.farcaster.xyz/developers/frames/v2/spec}
+
