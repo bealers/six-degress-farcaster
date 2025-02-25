@@ -31,6 +31,44 @@ Handlebars.registerHelper('ifNotEquals', function(
   return (arg1 !== arg2) ? options.fn(this) : options.inverse(this);
 });
 
+// Helper for degree nodes
+Handlebars.registerHelper('times', function(
+  this: any,
+  n: number, 
+  options: Handlebars.HelperOptions
+) {
+  let result = '';
+  for (let i = 0; i < n; i++) {
+    // Create a context object with index
+    const context = { ...this, '@index': i + 1 };
+    
+    // Add first/last flags
+    context['@first'] = (i === 0);
+    context['@last'] = (i === n - 1);
+    
+    result += options.fn(context);
+  }
+  return result;
+});
+
+// Simple equality helper
+Handlebars.registerHelper('eq', function(
+  this: any,
+  a: any, 
+  b: any
+) {
+  return a === b;
+});
+
+// Subtraction helper
+Handlebars.registerHelper('subtract', function(
+  this: any,
+  a: number, 
+  b: number
+) {
+  return a - b;
+});
+
 // Cache for compiled templates and styles
 const templateCache: Record<string, Handlebars.TemplateDelegate> = {};
 const styleCache: Record<string, string> = {};

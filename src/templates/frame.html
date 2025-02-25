@@ -2,23 +2,27 @@
 
 <p>Discover your social network path to a Farcaster personality.</p>
 
-<div class="profile" style="min-height: 200px; position: relative; margin-bottom: 20px; text-align: center;">
-  <!-- Primary image with multiple fallback mechanisms -->
-  <img src="{{imageUrl}}" alt="Choose a personality" class="frame-image" 
-       style="display: block; max-width: 90%; width: 300px; height: auto; margin: 0 auto 1.5rem auto; border-radius: 8px;" 
-       onerror="this.style.display='none';this.parentNode.style.backgroundImage='url({{imageUrl}})';this.parentNode.style.backgroundPosition='center';this.parentNode.style.backgroundRepeat='no-repeat';">
-  
-  <!-- Hidden backup image with different loading mechanism -->
-  <img src="{{imageUrl}}" style="display:none;" onload="if(!this.previousElementSibling.complete) { this.style.display='block'; this.previousElementSibling.style.display='none'; }" />
+<div class="profile-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px;">
+  {{#people}}
+  <form action="{{../selectUrl}}" method="post" style="margin: 0;">
+    <input type="hidden" name="buttonIndex" value="{{@index}}">
+    <button type="submit" class="profile-card" style="width: 100%; text-align: center; padding: 15px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.15); border: none; cursor: pointer; transition: transform 0.2s, background-color 0.2s; display: block;">
+      <img src="{{pfpUrl}}" alt="{{display}}" 
+          style="width: 90px; height: 90px; border-radius: 50%; margin: 0 auto 10px auto; border: 3px solid #fff; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.2);"
+          onerror="this.src='{{../imageUrl}}'; this.style.borderRadius='8px';">
+      <div style="font-weight: bold; font-size: 16px; color: white;">{{display}}</div>
+      <div style="color: #aaa; font-size: 14px; margin-top: 3px;">@{{username}}</div>
+    </button>
+  </form>
+  {{/people}}
 </div>
 
-<div class="btn-group">
-  {{#buttons}}
-  <form action="{{selectUrl}}" method="post">
-    <input type="hidden" name="buttonIndex" value="{{index}}">
-    <button type="submit" class="btn">{{label}}</button>
-  </form>
-  {{/buttons}}
-</div>
+<!-- Custom search option -->
+<form action="{{selectUrl}}" method="post" style="margin-top: 25px;">
+  <input type="hidden" name="buttonIndex" value="custom">
+  <button type="submit" class="btn" style="width: 100%; padding: 12px; border-radius: 8px; background-color: rgba(63, 81, 181, 0.7); border: none; color: white; font-weight: bold; cursor: pointer;">
+    Search for someone else
+  </button>
+</form>
 
 <p><small>Tip: bealers.eth</small></p> 

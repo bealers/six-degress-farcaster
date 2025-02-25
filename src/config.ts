@@ -25,5 +25,10 @@ export const config = {
     url: process.env.TURSO_DATABASE_URL,
     authToken: process.env.TURSO_AUTH_TOKEN
   },
-  isDev: process.env.NODE_ENV !== 'production'
+  isDev: process.env.NODE_ENV !== 'production',
+  development: {
+    // Fallback FID for development mode when frame headers aren't available
+    // This should be the developer's own FID for testing
+    fallbackFid: parseInt(process.env.DEV_FID || '22438', 10)
+  }
 } as const; 

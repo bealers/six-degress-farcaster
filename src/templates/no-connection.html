@@ -1,0 +1,47 @@
+{{#> base}}
+  <!-- No Connection Found Template -->
+  <div class="container">
+    <div class="result-card">
+      <div class="result-header">
+        <h1 class="title">No Connection Found 😞</h1>
+        <p class="subtitle">We couldn't find a connection to @{{username}} within 3 degrees in the Farcaster social graph.</p>
+      </div>
+
+      <div class="visualization">
+        <svg width="100%" height="200" viewBox="0 0 600 200">
+          <!-- Background -->
+          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#6366F1;stop-opacity:0.8" />
+            <stop offset="100%" style="stop-color:#2563EB;stop-opacity:0.8" />
+          </linearGradient>
+          <rect x="0" y="0" width="600" height="200" fill="url(#gradient)" rx="20" ry="20" />
+            
+          <!-- Broken connection visualization -->
+          <circle cx="150" cy="100" r="40" fill="#4F46E5" stroke="white" stroke-width="2" />
+          <text x="150" y="105" text-anchor="middle" fill="white" font-weight="bold">You</text>
+            
+          <line x1="190" y1="100" x2="240" y2="100" stroke="#9CA3AF" stroke-width="3" stroke-dasharray="5,5" />
+          <text x="270" y="80" text-anchor="middle" fill="white" font-weight="bold">?</text>
+          <line x1="300" y1="100" x2="350" y2="100" stroke="#9CA3AF" stroke-width="3" stroke-dasharray="5,5" />
+            
+          <circle cx="400" cy="100" r="40" fill="#4F46E5" stroke="white" stroke-width="2" />
+          <text x="400" y="105" text-anchor="middle" fill="white" font-weight="bold">@{{username}}</text>
+            
+          <!-- No connection indicator -->
+          <line x1="170" y1="120" x2="380" y2="120" stroke="#EF4444" stroke-width="4" />
+          <circle cx="275" cy="120" r="25" fill="#EF4444" />
+          <text x="275" y="125" text-anchor="middle" fill="white" font-weight="bold">✖</text>
+        </svg>
+      </div>
+
+      <div class="explanation">
+        <p>This means you might be from different Farcaster communities or circles.</p>
+        <p>Try connecting with more users to expand your network, or try another popular personality.</p>
+      </div>
+
+      <div class="frame-metadata">
+        {{{frameMetadata}}}
+      </div>
+    </div>
+  </div>
+{{/base}} 

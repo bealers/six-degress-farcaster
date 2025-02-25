@@ -2,21 +2,123 @@
 
 <p>You are {{degree}} degree{{#plural}}s{{/plural}} away from {{username}} in the Farcaster social graph.</p>
 
-<div class="profile">
-  <img src="{{imageUrl}}" alt="Connection result" class="frame-image">
+<!-- Connection path visualization -->
+<div class="connection-path" style="margin: 30px 0; text-align: center;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin: 0 auto; max-width: 90%;">
+    <!-- You -->
+    <div class="connection-node" style="text-align: center;">
+      <div class="avatar" style="width: 70px; height: 70px; border-radius: 50%; background-color: #3f51b5; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid white; position: relative;">
+        <span style="color: white; font-weight: bold; font-size: 18px;">You</span>
+        <!-- Tooltip on hover -->
+        <div style="position: absolute; bottom: -70px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 8px; width: max-content; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; font-size: 14px; color: white; text-align: center;">
+          Your Farcaster Account
+        </div>
+      </div>
+      <div style="margin-top: 10px; font-size: 14px; color: #aaa;">Your account</div>
+    </div>
+    
+    <!-- Connection path - dynamically show based on degree -->
+    <div class="connection-path" style="flex-grow: 1; display: flex; align-items: center; justify-content: space-between; position: relative;">
+      {{#if plural}}
+        <!-- For degree > 1, show multiple connection points -->
+        {{#if connectionPath}}
+          <!-- Connection path visualization -->
+          {{#each connectionPath.path}}
+            {{#unless @first}}
+              {{#unless @last}}
+                <!-- Connection line before node -->
+                <div style="flex: 1; height: 3px; background-color: #7e57c2; position: relative;"></div>
+                
+                <!-- Intermediate node with real user info -->
+                <div class="connection-node" style="z-index: 2; text-align: center; margin: 0 -15px;">
+                  <div class="avatar" style="width: 40px; height: 40px; border-radius: 50%; background-color: #9575cd; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 2px solid white; position: relative; box-shadow: 0 2px 10px rgba(0,0,0,0.3); overflow: hidden;">
+                    {{#if pfpUrl}}
+                      <img src="{{pfpUrl}}" alt="{{username}}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentNode.innerHTML='<span style=\'color: white; font-weight: bold;\'>{{username}}</span>';">
+                    {{else}}
+                      <span style="color: white; font-weight: bold; font-size: 14px;">{{username}}</span>
+                    {{/if}}
+                  </div>
+                  <div style="font-size: 11px; color: #ccc; margin-top: 2px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@{{username}}</div>
+                </div>
+              {{/unless}}
+            {{/unless}}
+          {{/each}}
+          
+          <!-- Final connection line to target -->
+          <div style="flex: 1; height: 3px; background-color: #7e57c2; position: relative;"></div>
+        {{else}}
+          <!-- Error case: Connection path data missing (shouldn't happen with real implementation) -->
+          <div style="flex: 1; height: 3px; background-color: #7e57c2; position: relative; margin: 0 15px;">
+            <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); background-color: #9c27b0; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+              {{degree}}
+            </div>
+          </div>
+        {{/if}}
+      {{else}}
+        <!-- For direct connection (degree=1) -->
+        <div style="flex: 1; height: 3px; background-color: #7e57c2; position: relative; margin: 0 15px;">
+          <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); background-color: #9c27b0; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+            1
+          </div>
+        </div>
+      {{/if}}
+    </div>
+    
+    <!-- Target person -->
+    <div class="connection-node" style="text-align: center;">
+      <div class="avatar" style="width: 70px; height: 70px; border-radius: 50%; background-color: #f44336; margin: 0 auto; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <img src="https://warpcast.com/~/avatar/{{targetFid}}" alt="{{username}}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentNode.innerHTML='<span style=\'color: white; font-weight: bold;\'>{{username}}</span>';">
+      </div>
+      <div style="margin-top: 10px; font-size: 14px; color: white;">@{{username}}</div>
+    </div>
+  </div>
+  
+  <div style="margin-top: 40px; text-align: center; color: #ccc; font-style: italic; font-size: 16px;">
+    {{#if plural}}
+      {{#if connectionPath}}
+        <!-- Display connection path description -->
+        You're connected through:
+        <div style="margin-top: 10px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px;">
+          {{#each connectionPath.path}}
+            {{#unless @first}}
+              {{#unless @last}}
+                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.1); border-radius: 12px; padding: 3px 8px;">
+                  <span style="margin-right: 3px;">@{{username}}</span>
+                </span>
+                {{#unless @last}}
+                  {{#unless (eq @index (subtract ../connectionPath.path.length 1))}}
+                    <span style="color: #666; margin: 0 2px;">→</span>
+                  {{/unless}}
+                {{/unless}}
+              {{/unless}}
+            {{/unless}}
+          {{/each}}
+        </div>
+      {{else}}
+        <!-- Unlikely error case - missing connection path -->
+        You're connected through other people in the Farcaster social graph.
+      {{/if}}
+    {{else}}
+      You're directly connected in the Farcaster social graph!
+    {{/if}}
+  </div>
+  
+  <div style="margin-top: 15px; text-align: center; font-size: 14px; color: #999;">
+    Connection strength is based on mutual follows in the Farcaster network
+  </div>
 </div>
 
-<div class="btn-group">
-  <form action="{{shareUrl}}" method="post">
+<div class="btn-group" style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+  <form action="{{shareUrl}}" method="post" style="flex: 1; max-width: 200px;">
     <input type="hidden" name="buttonIndex" value="1">
     <input type="hidden" name="state" value="{{state}}">
-    <button type="submit" class="btn">Share My Connection</button>
+    <button type="submit" class="btn" style="width: 100%; padding: 12px; background-color: #673ab7; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Share My Connection</button>
   </form>
   
-  <form action="{{shareUrl}}" method="post">
+  <form action="{{shareUrl}}" method="post" style="flex: 1; max-width: 200px;">
     <input type="hidden" name="buttonIndex" value="2">
     <input type="hidden" name="state" value="{{state}}">
-    <button type="submit" class="btn">Try Another</button>
+    <button type="submit" class="btn" style="width: 100%; padding: 12px; background-color: #444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Try Another</button>
   </form>
 </div>
 

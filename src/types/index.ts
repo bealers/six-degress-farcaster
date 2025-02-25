@@ -1,14 +1,13 @@
 export interface User {
   fid: number;
   username: string;
-  following: number[];
+  displayName?: string;
+  pfpUrl?: string;
 }
 
 export interface ConnectionPath {
-  start: User;
-  end: User;
-  path: User[];
   degree: number;
+  path: User[];
 }
 
 export interface FrameState {
