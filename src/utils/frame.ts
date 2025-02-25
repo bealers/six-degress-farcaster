@@ -1,11 +1,83 @@
 import { config } from '../config.js';
 import type { FrameOptions } from '../types/frame.js';
+import { render } from './template.js';
 
 // Helper function to clean URLs
 export function cleanUrl(url: string): string {
   return url.replace(/([^:])\/{2,}/g, "$1/");
 }
 
+/**
+ * Generate frame metadata HTML
+ * 
+ * For in-feed frames (embedded in casts):
+ * - Use JSON stringified format with proper escaping
+ * - Include version, imageUrl, and button properties
+ * - Use name attribute for in-feed frames (this is what works with Farcaster)
+ * 
+ * For full frames (after clicking in-feed button):
+ * - Use individual meta tags with property attribute
+ * - Include separate tags for image, buttons, input, etc.
+ */
+export function generateFrameMetadata(frameMetadata: any): string {
+  if (frameMetadata.button?.action?.type === 'launch_frame') {
+    // In-feed frame with launch button (embedded in casts)
+    // This MUST use JSON stringified format following Farcaster Frames v2 spec
+    const embedJson = {
+      version: "next", // CRITICAL: Must be "next", NOT "vNext"
+      imageUrl: frameMetadata.imageUrl, // Must be 3:2 aspect ratio and < 10MB
+      button: {
+        title: frameMetadata.button.title, // Max 32 chars
+        action: {
+          type: "launch_frame", // Must be exactly "launch_frame" 
+          name: frameMetadata.button.action.name || "Six Degrees of Farcaster", // Max 32 chars
+          url: frameMetadata.button.action.url,
+          splashImageUrl: frameMetadata.button.action.splashImageUrl || cleanUrl(`${config.hostUrl}/static/splash.png`),
+          splashBackgroundColor: frameMetadata.button.action.splashBackgroundColor || "#191919"
+        }
+      }
+    };
+    
+    // Serialize to JSON and replace quotes with HTML entities
+    // Some clients may expect HTML-encoded entities rather than literal quotes
+    const jsonContent = JSON.stringify(embedJson);
+    
+    // CRITICAL: Use name attribute for in-feed frames
+    return `<meta name="fc:frame" content="${jsonContent.replace(/"/g, '&quot;')}" />`;
+  } else {
+    // Full frame with input and post button
+    // This uses individual meta tags following Farcaster Frames v2 spec
+    // For full frames, we use property attribute
+    let metaTags = `<meta property="fc:frame" content="next" />`;
+    metaTags += `<meta property="fc:frame:image" content="${frameMetadata.imageUrl}" />`;
+    
+    if (frameMetadata.input) {
+      metaTags += `<meta property="fc:frame:input:text" content="${frameMetadata.input.text}" />`;
+    }
+    
+    // Add button tags - using property attribute per spec
+    if (frameMetadata.buttons) {
+      frameMetadata.buttons.forEach((btn: any, i: number) => {
+        metaTags += `<meta property="fc:frame:button:${i + 1}" content="${btn.label}" />`;
+        metaTags += `<meta property="fc:frame:button:${i + 1}:action" content="${btn.action || 'post'}" />`;
+      });
+    }
+    
+    if (frameMetadata.postUrl) {
+      metaTags += `<meta property="fc:frame:post_url" content="${frameMetadata.postUrl}" />`;
+    }
+    
+    if (frameMetadata.state) {
+      metaTags += `<meta property="fc:frame:state" content='${JSON.stringify(frameMetadata.state)}' />`;
+    }
+    
+    return metaTags;
+  }
+}
+
+/**
+ * Generate HTML for a frame
+ */
 export function generateFrameHtml(options: FrameOptions): string {
   const {
     title,
@@ -16,57 +88,30 @@ export function generateFrameHtml(options: FrameOptions): string {
     includeFrameSDK = false
   } = options;
 
-  // Generate frame meta tags based on metadata type
-  let frameEmbed = '';
+  // Generate frame metadata - use the updated function that doesn't include newlines
+  const frameMetadataHtml = generateFrameMetadata(frameMetadata);
   
+  // For the home page, we use a direct HTML approach
   if (frameMetadata.button?.action?.type === 'launch_frame') {
-    // In-feed frame with launch button
-    const embedJson = {
-      version: "next",
-      imageUrl: frameMetadata.imageUrl,
-      button: {
-        title: frameMetadata.button.title,
-        action: {
-          type: "launch_frame",
-          name: "Six Degrees of Farcaster",
-          url: frameMetadata.button.action.url,
-          splashImageUrl: cleanUrl(`${config.hostUrl}/static/splash.png`),
-          splashBackgroundColor: "#191919"
-        }
-      }
-    };
-    frameEmbed = `<meta name="fc:frame" content='${JSON.stringify(embedJson)}' />`;
-  } else {
-    // Full frame with input and post button
-    frameEmbed = `
-    <meta property="fc:frame" content="next" />
-    <meta property="fc:frame:image" content="${frameMetadata.imageUrl}" />
-    ${frameMetadata.input ? `<meta property="fc:frame:input:text" content="${frameMetadata.input.text}" />` : ''}
-    ${frameMetadata.buttons?.map((btn, i) => `
-    <meta property="fc:frame:button:${i + 1}" content="${btn.label}" />
-    ${btn.action ? `<meta property="fc:frame:button:${i + 1}:action" content="${btn.action}" />` : ''}`).join('\n') || ''}
-    ${frameMetadata.postUrl ? `<meta property="fc:frame:post_url" content="${frameMetadata.postUrl}" />` : ''}
-    ${frameMetadata.state ? `<meta property="fc:frame:state" content="${JSON.stringify(frameMetadata.state)}" />` : ''}`;
+    return render('home', {
+      title,
+      description,
+      imageUrl,
+      frameMetadata: frameMetadataHtml, // Use the clean metadata format
+      hostUrl: config.hostUrl,
+      frameUrl: frameMetadata.button.action.url,
+      includeFrameSDK
+    });
   }
-
-  return `<!DOCTYPE html>
-<html>
-  <head>
-    <title>${title}</title>
-    <meta property="og:title" content="${title}" />
-    ${description ? `<meta property="og:description" content="${description}" />` : ''}
-    <meta property="og:image" content="${imageUrl}" />
-    
-    <!-- Farcaster Frame Metadata -->
-    ${frameEmbed}
-    ${includeFrameSDK ? `
-    <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk/dist/index.min.js"></script>
-    <script>
-      frame.sdk.actions.ready();
-    </script>` : ''}
-  </head>
-  <body>
-    ${content}
-  </body>
-</html>`;
+  
+  // For other pages, we use the content provided
+  return render('base', {
+    title,
+    description,
+    imageUrl,
+    frameMetadata: frameMetadataHtml, // Use the clean metadata format
+    hostUrl: config.hostUrl,
+    content,
+    includeFrameSDK
+  });
 } 

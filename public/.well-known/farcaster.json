@@ -1,0 +1,17 @@
+{
+  "accountAssociation": {
+    "header": "eyJhbGciOiJIUzI1NiJ9",
+    "payload": "eyJkb21haW4iOiIwM2M2ODI3NzU3ODQwZS5saHIubGlmZSJ9",
+    "signature": "dGhpc19pc19hX2R1bW15X3NpZ25hdHVyZQ"
+  },
+  "frame": {
+    "version": "next",
+    "name": "Six Degrees of Farcaster",
+    "homeUrl": "https://03c6827757840e.lhr.life/",
+    "iconUrl": "https://03c6827757840e.lhr.life/static/splash.png",
+    "imageUrl": "https://03c6827757840e.lhr.life/static/initial.png",
+    "buttonTitle": "Find Connection",
+    "splashImageUrl": "https://03c6827757840e.lhr.life/static/splash.png",
+    "splashBackgroundColor": "#191919"
+  }
+} 

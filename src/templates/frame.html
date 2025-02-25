@@ -1,0 +1,24 @@
+<h1>Choose a Farcaster Personality</h1>
+
+<p>Discover your social network path to a Farcaster personality.</p>
+
+<div class="profile" style="min-height: 200px; position: relative; margin-bottom: 20px; text-align: center;">
+  <!-- Primary image with multiple fallback mechanisms -->
+  <img src="{{imageUrl}}" alt="Choose a personality" class="frame-image" 
+       style="display: block; max-width: 90%; width: 300px; height: auto; margin: 0 auto 1.5rem auto; border-radius: 8px;" 
+       onerror="this.style.display='none';this.parentNode.style.backgroundImage='url({{imageUrl}})';this.parentNode.style.backgroundPosition='center';this.parentNode.style.backgroundRepeat='no-repeat';">
+  
+  <!-- Hidden backup image with different loading mechanism -->
+  <img src="{{imageUrl}}" style="display:none;" onload="if(!this.previousElementSibling.complete) { this.style.display='block'; this.previousElementSibling.style.display='none'; }" />
+</div>
+
+<div class="btn-group">
+  {{#buttons}}
+  <form action="{{selectUrl}}" method="post">
+    <input type="hidden" name="buttonIndex" value="{{index}}">
+    <button type="submit" class="btn">{{label}}</button>
+  </form>
+  {{/buttons}}
+</div>
+
+<p><small>Tip: bealers.eth</small></p> 

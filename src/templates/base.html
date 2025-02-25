@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{title}}</title>
+  
+  <!-- Farcaster Frame Metadata - MUST come before OG tags for proper detection -->
+  {{{frameMetadata}}}
+  
+  <!-- OpenGraph tags for general web sharing -->
+  <meta property="og:title" content="{{title}}" />
+  <meta property="og:description" content="{{description}}" />
+  <meta property="og:image" content="{{imageUrl}}" />
+  <meta property="og:url" content="{{hostUrl}}" />
+  <meta property="og:type" content="website" />
+  
+  <!-- Styles -->
+  <style>
+    {{{styles}}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    {{{content}}}
+  </div>
+  
+  {{#includeFrameSDK}}
+  <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk/dist/index.min.js"></script>
+  <script>
+    frame.sdk.actions.ready();
+  </script>
+  {{/includeFrameSDK}}
+</body>
+</html> 

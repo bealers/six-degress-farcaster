@@ -1,0 +1,23 @@
+<h1>Connection Found!</h1>
+
+<p>You are {{degree}} degree{{#plural}}s{{/plural}} away from {{username}} in the Farcaster social graph.</p>
+
+<div class="profile">
+  <img src="{{imageUrl}}" alt="Connection result" class="frame-image">
+</div>
+
+<div class="btn-group">
+  <form action="{{shareUrl}}" method="post">
+    <input type="hidden" name="buttonIndex" value="1">
+    <input type="hidden" name="state" value="{{state}}">
+    <button type="submit" class="btn">Share My Connection</button>
+  </form>
+  
+  <form action="{{shareUrl}}" method="post">
+    <input type="hidden" name="buttonIndex" value="2">
+    <input type="hidden" name="state" value="{{state}}">
+    <button type="submit" class="btn">Try Another</button>
+  </form>
+</div>
+
+<p><small>Tip: bealers.eth</small></p> 

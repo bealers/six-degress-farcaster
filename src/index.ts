@@ -9,6 +9,9 @@ const app = new Hono();
 // Serve static files from the public directory
 app.use('/static/*', serveStatic({ root: './public' }));
 
+// Serve .well-known directory for Farcaster manifest
+app.use('/.well-known/*', serveStatic({ root: './public' }));
+
 // Mount the frame routes
 app.route('/', frame);
 
