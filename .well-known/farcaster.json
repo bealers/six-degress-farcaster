@@ -1,0 +1,19 @@
+{
+  "frame": {
+    "version": "next",
+    "name": "Six Degrees of Farcaster",
+    "homeUrl": "https://3a07b925cddc4a.lhr.life/",
+    "iconUrl": "https://3a07b925cddc4a.lhr.life/static/splash.png",
+    "splashImageUrl": "https://3a07b925cddc4a.lhr.life/static/splash.png",
+    "splashBackgroundColor": "#191919",
+    "button": {
+      "action": {
+        "type": "launch_frame",
+        "name": "Find connection",
+        "url": "https://3a07b925cddc4a.lhr.life/",
+        "splashImageUrl": "https://3a07b925cddc4a.lhr.life/static/splash.png",
+        "splashBackgroundColor": "#191919"
+      }
+    }
+  }
+} 

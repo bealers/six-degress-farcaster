@@ -8,10 +8,10 @@ export async function generateConnectionImage(path: ConnectionPath): Promise<Buf
 
 export async function generateInitialImage() {
   const svg = `
-    <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
-      <rect width="1200" height="630" fill="#191919"/>
+    <svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1200" height="800" fill="#191919"/>
       <text x="50%" y="50%" text-anchor="middle" font-family="system-ui" font-size="48" fill="white">
-        Six Degrees of Farcaster
+        Six Degrees of Farcasterrrr
       </text>
     </svg>
   `;
@@ -37,7 +37,7 @@ export async function generateSplashImage() {
         text-anchor="middle" 
         dominant-baseline="middle"
       >
-        Loading...
+        Loading456...
       </text>
     </svg>
   `;
@@ -49,8 +49,8 @@ export async function generateSplashImage() {
 
 export async function generateSearchImage() {
   const svg = `
-    <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
-      <rect width="1200" height="630" fill="#191919"/>
+    <svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1200" height="800" fill="#191919"/>
       <text x="50%" y="50%" text-anchor="middle" font-family="system-ui" font-size="48" fill="white">
         Enter username to find connection
       </text>
@@ -64,8 +64,8 @@ export async function generateSearchImage() {
 
 export async function generateResultImage() {
   const svg = `
-    <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
-      <rect width="1200" height="630" fill="#191919"/>
+    <svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1200" height="800" fill="#191919"/>
       <text x="50%" y="50%" text-anchor="middle" font-family="system-ui" font-size="48" fill="white">
         Connection found!
       </text>
@@ -79,8 +79,8 @@ export async function generateResultImage() {
 
 export async function generateErrorImage() {
   const svg = `
-    <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
-      <rect width="1200" height="630" fill="#191919"/>
+    <svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1200" height="800" fill="#191919"/>
       <text x="50%" y="50%" text-anchor="middle" font-family="system-ui" font-size="48" fill="white">
         Error occurred
       </text>
