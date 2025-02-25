@@ -45,7 +45,7 @@ app.get('/', async (c) => {
   }));
 });
 
-//----------- Endpoint for the full frame that opens after clicking the in-button
+//----------- Endpoint for the full frame that opens after clicking the in-frame button
 app.get('/frame', async (c) => {
   console.log('Full frame loaded');
   
@@ -59,7 +59,8 @@ app.get('/frame', async (c) => {
       text: "Enter first username"
     },
     buttons: [{
-      label: "Find Connection"
+      label: "Search",
+      action: "post"
     }],
     postUrl: postUrl
   };
