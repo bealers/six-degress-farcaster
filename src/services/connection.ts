@@ -5,16 +5,18 @@ import { config } from '../config.js';
 import { render } from '../utils/template.js';
 import { cleanUrl, generateFrameMetadata } from '../utils/frame.js';
 import type { User, ConnectionPath } from '../types/index.js';
-import { SocialGraphAPI } from './api-interface.js';
+import { GraphAPI } from '../types/graph.js';
+import { Hono } from 'hono';
 
 export class ConnectionService {
-  private neynar: SocialGraphAPI;
+  private graphAPI: GraphAPI;
   private db: Database;
   private pathFinder!: PathFinder;
 
-  constructor(hubUrl: string, socialGraphAPI: SocialGraphAPI) {
+  constructor(hubUrl: string, graphAPI: GraphAPI) {
+    
     // Use the provided social graph API implementation
-    this.neynar = socialGraphAPI;
+    this.graphAPI = graphAPI;
     
     // Initialize database connection
     this.db = new Database(
@@ -34,38 +36,78 @@ export class ConnectionService {
     console.log('[DATABASE] Database initialized successfully');
     
     // Only create PathFinder after database is initialized
-    this.pathFinder = new PathFinder(this.neynar, this.db);
+    this.pathFinder = new PathFinder(this.graphAPI, this.db);
     console.log('[DATABASE] PathFinder initialized with database access');
   }
 
-  async findConnection(user1: string, user2: string): Promise<ConnectionPath | null> {
-    try {
-      console.log(`[CONNECTION] Finding path between ${user1} and ${user2}`);
-      const path = await this.pathFinder.findPath(user1, user2);
-      
-      // Convert path of FIDs to usernames for display
-      const users = await Promise.all(
-        path.map(fid => this.neynar.lookupUserByFid(fid))
-      );
-      
-      return {
-        degree: path.length - 1, // Degree is number of edges, which is nodes - 1
-        path: users.map(user => ({
-          username: user.username,
-          displayName: user.display_name,
-          fid: user.fid,
-          pfpUrl: user.pfp_url
-        }))
+  /**
+   * Find the shortest social connection between two users
+   * @param fromFid The source user FID (or undefined if not logged in)
+   * @param toFid The target user FID to connect to
+   * @returns Connection result with path or error
+   */
+  async findConnection(fromFid: number | undefined, toFid: number): Promise<any> {
+    // Validate inputs
+    if (!toFid) {
+      console.error('[CONNECTION] Missing target user FID');
+      return { success: false, error: 'Missing target user' };
+    }
+    
+    // In development, use fallback FID if source FID not provided
+    if (!fromFid && config.isDev) {
+      fromFid = config.development.fallbackFid;
+      console.log(`[CONNECTION] Development mode - using fallback source FID: ${fromFid}`);
+    }
+    
+    if (!fromFid) {
+      console.error('[CONNECTION] Missing source user FID');
+      return { 
+        success: false, 
+        error: 'Please sign in with Farcaster to find your connection'
       };
+    }
+    
+    if (fromFid === toFid) {
+      console.log('[CONNECTION] Source and target FIDs are the same');
+      return { 
+        success: true, 
+        path: [fromFid],
+        message: "That's you!"
+      };
+    }
+    
+    try {
+      // Use the path finder to calculate connection
+      console.log(`[CONNECTION] Finding path from FID ${fromFid} to FID ${toFid}`);
+      // Cast the FIDs to strings if pathFinder expects strings
+      const path = await this.pathFinder.findPath(String(fromFid), String(toFid));
+      
+      // Check if a path was found
+      if (path && path.length > 0) {
+        console.log(`[CONNECTION] Path found with ${path.length} nodes: ${path.join(' -> ')}`);
+        return {
+          success: true,
+          path: path
+        };
+      } else {
+        console.log(`[CONNECTION] No path found between FID ${fromFid} and FID ${toFid}`);
+        return {
+          success: false,
+          error: 'No connection found'
+        };
+      }
     } catch (error) {
       console.error('[CONNECTION] Error finding connection:', error);
-      return null;
+      return {
+        success: false,
+        error: 'Error calculating connection'
+      };
     }
   }
 
   async getUser(username: string): Promise<User | null> {
     try {
-      return await this.neynar.getUserByUsername(username);
+      return await this.graphAPI.getUserByUsername(username);
     } catch (error) {
       console.error('[CONNECTION] Error getting user:', error);
       return null;
@@ -81,7 +123,7 @@ export class ConnectionService {
   async calculateConnection(context: any, targetUsername: string) {
     try {
       console.log('[CONNECTION] Looking up target user:', targetUsername);
-      const targetUser = await this.neynar.getUserByUsername(targetUsername);
+      const targetUser = await this.graphAPI.getUserByUsername(targetUsername);
       console.log('[CONNECTION] Target user found:', targetUser.fid);
       
       // Get viewer's FID from request - this might throw in production
@@ -97,7 +139,7 @@ export class ConnectionService {
       // Try to find a viewer username for the FID
       let viewerUsername;
       try {
-        const viewerUser = await this.neynar.lookupUserByFid(viewerFid);
+        const viewerUser = await this.graphAPI.lookupUserByFid(viewerFid);
         viewerUsername = viewerUser.username;
         console.log(`[CONNECTION] Resolved viewer username: @${viewerUsername}`);
       } catch (error) {
@@ -111,14 +153,14 @@ export class ConnectionService {
       
       try {
         console.log(`[CONNECTION] Searching for path between @${viewerUsername} and @${targetUsername}`);
-        connectionResult = await this.findConnection(viewerUsername, targetUsername);
+        connectionResult = await this.findConnection(viewerFid, targetUser.fid);
         
         if (!connectionResult) {
           console.log('[CONNECTION] No path found between users');
           return this.renderNoConnectionResponse(context, targetUser);
         }
         
-        degreeOfSeparation = connectionResult.degree;
+        degreeOfSeparation = connectionResult.path.length - 1;
         connectionPath = connectionResult.path;
         console.log(`[CONNECTION] Found path with ${degreeOfSeparation} degree(s) of separation`);
         

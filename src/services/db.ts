@@ -70,7 +70,8 @@ export class Database {
     }
   }
 
-  // provides a Promise-based wrapper around SQLite
+  // ----- promise-based wrappers around SQLite -----
+  
   private async sqliteRun(sql: string, params: any[] = []) {
     if (!this.sqlite) throw new Error('SQLite not initialized');
     return new Promise((resolve, reject) => {

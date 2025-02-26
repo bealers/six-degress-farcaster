@@ -20,11 +20,13 @@ export function cleanUrl(url: string): string {
  * - Include separate tags for image, buttons, input, etc.
  */
 export function generateFrameMetadata(frameMetadata: any): string {
+
   if (frameMetadata.button?.action?.type === 'launch_frame') {
+    
     // In-feed frame with launch button (embedded in casts)
     // This MUST use JSON stringified format following Farcaster Frames v2 spec
     const embedJson = {
-      version: "next", // CRITICAL: Must be "next", NOT "vNext"
+      version: "next", // must be "next"
       imageUrl: frameMetadata.imageUrl, // Must be 3:2 aspect ratio and < 10MB
       button: {
         title: frameMetadata.button.title, // Max 32 chars
@@ -39,12 +41,14 @@ export function generateFrameMetadata(frameMetadata: any): string {
     };
     
     // Serialize to JSON and replace quotes with HTML entities
-    // Some clients may expect HTML-encoded entities rather than literal quotes
+    // Some clients may expect HTML-encoded entities rather than literal quotes?
     const jsonContent = JSON.stringify(embedJson);
     
-    // CRITICAL: Use name attribute for in-feed frames
+    // Note: name attribute essential for in-feed frames
     return `<meta name="fc:frame" content="${jsonContent.replace(/"/g, '&quot;')}" />`;
+    
   } else {
+
     // Full frame with input and post button
     // This uses individual meta tags following Farcaster Frames v2 spec
     // For full frames, we use property attribute
@@ -88,7 +92,7 @@ export function generateFrameHtml(options: FrameOptions): string {
     includeFrameSDK = false
   } = options;
 
-  // Generate frame metadata - use the updated function that doesn't include newlines
+  // Generate frame metadata without newlines
   const frameMetadataHtml = generateFrameMetadata(frameMetadata);
   
   // For the home page, we use a direct HTML approach

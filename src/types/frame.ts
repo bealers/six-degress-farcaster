@@ -4,8 +4,8 @@ export interface FrameButton {
 }
 
 export interface FrameMetadata {
-  version: "next"; // CRITICAL: Must be "next", NOT "vNext"
-  imageUrl: string; // Must be 3:2 aspect ratio and < 10MB  
+  version: "next";
+  imageUrl: string;
   input?: {
     text: string;
   };
@@ -15,7 +15,7 @@ export interface FrameMetadata {
   button?: {
     title: string; // Button text (32 char max)
     action: {
-      type: "launch_frame"; // MUST be this exact value for in-feed frames
+      type: "launch_frame"; // must be this for in-feed frames
       name?: string; // App name (32 char max)
       url: string; // Frame launch URL
       splashImageUrl?: string; // 200x200px splash image
@@ -27,7 +27,7 @@ export interface FrameMetadata {
 export interface FrameOptions {
   title: string;
   description?: string;
-  imageUrl: string; // Must be 3:2 aspect ratio and < 10MB
+  imageUrl: string;
   frameMetadata: FrameMetadata;
   content: string;
   includeFrameSDK?: boolean;

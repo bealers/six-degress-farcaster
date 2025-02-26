@@ -74,10 +74,41 @@ p {
   margin: 2rem 0;
 }
 
+.refresh-button {
+  display: inline-block;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  background-color: rgba(92, 22, 197, 0.7);
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.refresh-button:hover {
+  background-color: rgba(124, 58, 237, 0.9);
+}
+
 .footer {
   margin-top: 3rem;
   font-size: 0.9rem;
   opacity: 0.8;
+}
+
+.footer a {
+  color: var(--accent-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.footer a:hover {
+  color: #ff6b9d;
+  opacity: 1;
 }
 
 .frame-image {

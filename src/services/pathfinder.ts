@@ -1,4 +1,4 @@
-import { SocialGraphAPI } from './api-interface.js';
+import { GraphAPI } from '../types/graph.js';
 import { Database } from './db.js';
 import { config } from '../config.js';
 
@@ -9,10 +9,10 @@ const CONNECTION_BATCH_SIZE = 100; // Number of connections to process in a batc
 const TIMEOUT_MS = 60000; // 60 second timeout for path finding
 
 export class PathFinder {
-  private api: SocialGraphAPI;
+  private api: GraphAPI;
   private db: Database;
 
-  constructor(api: SocialGraphAPI, db: Database) {
+  constructor(api: GraphAPI, db: Database) {
     this.api = api;
     this.db = db;
   }

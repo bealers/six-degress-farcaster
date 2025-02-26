@@ -7,9 +7,9 @@ import Handlebars from 'handlebars';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Path to templates and styles
-const templatesDir = path.join(__dirname, '..', 'templates');
-const stylesDir = path.join(__dirname, '..', 'styles');
+// Path to templates and styles in the new ui directory
+const templatesDir = path.join(__dirname, '..', 'ui', 'templates');
+const stylesDir = path.join(__dirname, '..', 'ui', 'styles');
 
 // Register Handlebars helpers
 // The #each helper is built-in, but we'll add any other custom helpers here

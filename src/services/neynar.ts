@@ -1,7 +1,7 @@
 import { NeynarAPIClient, Configuration } from '@neynar/nodejs-sdk';
-import { User, HydratedFollower } from '@neynar/nodejs-sdk/build/api';
+import { User as NeynarUser, HydratedFollower } from '@neynar/nodejs-sdk/build/api';
 import { config } from '../config.js';
-import { SocialGraphAPI, PopularUser } from './api-interface.js';
+import { GraphAPI, PopularUser, User } from '../types/graph.js';
 
 interface Follower {
   fid: number;
@@ -12,20 +12,8 @@ interface Following {
 }
 
 interface UserResponse {
-  user: User | null;
+  user: NeynarUser | null;
 }
-
-// Used as a last resort when API calls fail
-const FALLBACK_POPULAR_USERS: PopularUser[] = [
-  { username: 'vitalik.eth', display: 'Vitalik Buterin', fid: 5650, pfpUrl: 'https://warpcast.com/~/avatar/5650' },
-  { username: 'dwr.eth', display: 'Dan Romero', fid: 3, pfpUrl: 'https://warpcast.com/~/avatar/3' },
-  { username: 'varunsrin.eth', display: 'Varun Srinivasan', fid: 2, pfpUrl: 'https://warpcast.com/~/avatar/2' },
-  { username: 'naval', display: 'Naval Ravikant', fid: 174, pfpUrl: 'https://warpcast.com/~/avatar/174' },
-  { username: 'vitor', display: 'Vitor Menezes', fid: 26406, pfpUrl: 'https://warpcast.com/~/avatar/26406' },
-  { username: 'puja', display: 'Puja Ohlhaver', fid: 1337, pfpUrl: 'https://warpcast.com/~/avatar/1337' },
-  { username: 'balajis', display: 'Balaji S', fid: 602, pfpUrl: 'https://warpcast.com/~/avatar/602' }, 
-  { username: 'davidhoffman', display: 'David Hoffman', fid: 6809, pfpUrl: 'https://warpcast.com/~/avatar/6809' }
-];
 
 export interface NeynarClient {
   getFollowers(fid: number): Promise<number[]>;
@@ -35,9 +23,9 @@ export interface NeynarClient {
 }
 
 /**
- * Implementation of SocialGraphAPI using Neynar
+ * Implementation of GraphAPI interface using Neynar service
  */
-export class NeynarService implements SocialGraphAPI {
+export class NeynarService implements GraphAPI {
   private client: NeynarAPIClient;
   private popularUsersCache: PopularUser[] = [];
   // Set an initial cache update time to avoid immediate misses
@@ -177,10 +165,10 @@ export class NeynarService implements SocialGraphAPI {
   /**
    * Get popular users based on follower count or trending activity
    * Uses a local cache with TTL to reduce API calls
-   * @param limit Number of users to return (default: 10)
+   * @param limit Number of users to return (default: 20)
    * @returns Array of popular users with their profile information
    */
-  async getPopularUsers(limit: number = 10): Promise<PopularUser[]> {
+  async getPopularUsers(limit: number = 20): Promise<PopularUser[]> {
     const now = Date.now();
     const cacheAge = now - this.lastCacheUpdate;
     const cacheValid = cacheAge < this.CACHE_TTL;
@@ -230,18 +218,7 @@ export class NeynarService implements SocialGraphAPI {
       }
       
       // Method 2: Try to get active users
-      // Note: fetchTrendingCasts doesn't exist in the current SDK
-      
-      /*
-      try {
-        const trendingUsers = await this.fetchActiveCasters();
-        if (trendingUsers.length > 0) {
-          popularUsers = [...popularUsers, ...trendingUsers];
-        }
-      } catch (error) {
-        console.error('Error fetching trending users:', error);
-      }
-      */
+      // Add other methods to fetch popular users here if needed
       
       // If we have users, update cache
       if (popularUsers.length > 0) {
@@ -252,13 +229,13 @@ export class NeynarService implements SocialGraphAPI {
         
         this.popularUsersCache = uniqueUsers;
         this.lastCacheUpdate = now;
-        console.log(`[CACHE UPDATE #${this.instanceId}] Cache updated with ${uniqueUsers.length} users, new timestamp: ${this.lastCacheUpdate}`);
+        console.log(`[CACHE UPDATE #${this.instanceId}] Cache updated with ${uniqueUsers.length} users at: ${new Date(this.lastCacheUpdate).toISOString()}`);
         
         return uniqueUsers.slice(0, limit);
       }
       
       // If we couldn't get any users via API, use fallback
-      console.log(`[FALLBACK #${this.instanceId}] Using predefined popular users list`);
+      console.log(`[FALLBACK #${this.instanceId}] Using predefined popular users list (${FALLBACK_POPULAR_USERS.length} users)`);
       // Still update the timestamp to prevent frequent retries
       this.lastCacheUpdate = now; 
       console.log(`[CACHE UPDATE #${this.instanceId}] Cache timestamp updated to: ${this.lastCacheUpdate}`);

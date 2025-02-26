@@ -1,6 +1,6 @@
-<h1>Choose a Farcaster Personality</h1>
+<h1>Choose a Farcaster User</h1>
 
-<p>Discover your social network path to a Farcaster personality.</p>
+<p>Discover your social network path to another Farcaster.</p>
 
 <div class="profile-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px;">
   {{#people}}
@@ -16,6 +16,9 @@
   </form>
   {{/people}}
 </div>
+
+<!-- More people button -->
+{{{moreButton}}}
 
 <!-- Custom search option -->
 <form action="{{selectUrl}}" method="post" style="margin-top: 25px;">

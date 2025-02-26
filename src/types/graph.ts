@@ -3,9 +3,9 @@
  */
 export interface User {
   username: string;
-  display_name?: string;
+  display: string;
   fid: number;
-  pfp_url?: string;
+  pfpUrl: string;
 }
 
 /**
@@ -19,10 +19,30 @@ export interface PopularUser {
 }
 
 /**
- * Common interface for social graph API providers
- * This abstraction allows for swapping Neynar with other implementations
+ * Social mapping interface
  */
-export interface SocialGraphAPI {
+export interface SocialMapping {
+  [fid: number]: {
+    followers: number[];
+    following: number[];
+  };
+}
+
+/**
+ * Neynar-specific client interface
+ */
+export interface NeynarClient {
+  fetchFollowers(fid: number, cursor?: string): Promise<any>;
+  fetchFollowing(fid: number, cursor?: string): Promise<any>;
+  fetchUserByUsername(username: string): Promise<any>;
+  fetchPopularUsers(limit?: number): Promise<any>;
+}
+
+/**
+ * Common interface for social graph API providers
+ * (Basically a wrapper to Neynar)
+ */
+export interface GraphAPI {
   /**
    * Get followers of a user
    * @param fid The FID of the user
@@ -57,4 +77,6 @@ export interface SocialGraphAPI {
    * @returns Array of popular users
    */
   getPopularUsers(limit?: number): Promise<PopularUser[]>;
+
+  getUserByFid(fid: number): Promise<User | null>;
 } 

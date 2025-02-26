@@ -25,6 +25,12 @@ export const config = {
     url: process.env.TURSO_DATABASE_URL,
     authToken: process.env.TURSO_AUTH_TOKEN
   },
+  users: {
+    // Maximum number of popular users to fetch from the API
+    popularUsersLimit: 20,
+    // Number of users to display in the UI
+    displayUsersCount: 4
+  },
   isDev: process.env.NODE_ENV !== 'production',
   development: {
     // Fallback FID for development mode when frame headers aren't available
