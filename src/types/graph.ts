@@ -69,7 +69,7 @@ export interface GraphAPI {
    * @param fid The FID to look up
    * @returns User information
    */
-  lookupUserByFid(fid: number): Promise<User>;
+  getUserByFid(fid: number): Promise<User>;
   
   /**
    * Get popular users on the platform
@@ -77,6 +77,11 @@ export interface GraphAPI {
    * @returns Array of popular users
    */
   getPopularUsers(limit?: number): Promise<PopularUser[]>;
-
-  getUserByFid(fid: number): Promise<User | null>;
+  
+  /**
+   * Alias for getUserByFid for backward compatibility
+   * @param fid The FID to look up
+   * @returns User information
+   */
+  lookupUserByFid(fid: number): Promise<User>;
 } 

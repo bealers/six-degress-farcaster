@@ -1,7 +1,9 @@
 import sharp from 'sharp';
 import { mkdir } from 'fs/promises';
 import type { ConnectionPath } from '../types/index.js';
+import { fileURLToPath } from 'url';
 
+console.log('Script starting...');
 
 export async function generateConnectionImage(path: ConnectionPath): Promise<Buffer> {
   // TODO: Implement dynamic connection image generation
@@ -327,10 +329,8 @@ export async function generateAllImages(): Promise<void> {
   }
 }
 
-// Script entry point if run directly
-if (require.main === module) {
-  generateAllImages().catch(error => {
-    console.error('Failed to generate images:', error);
-    process.exit(1);
-  });
-} 
+// Direct execution - no conditional checks
+generateAllImages().catch(error => {
+  console.error('Failed to generate images:', error);
+  process.exit(1);
+}); 

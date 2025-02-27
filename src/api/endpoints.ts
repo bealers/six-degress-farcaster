@@ -13,39 +13,6 @@ const connectionService = getConnectionService();
 const userService = getUserService();
 const frameService = getFrameService();
 
-/**
- * Extract the current user's FID from the Farcaster frame context
- * @param c Hono context containing the request
- * @returns The user's FID or null if not available
- */
-function getCurrentUserFid(c: any): number | null {
-  let currentUserFid: number | null = null;
-  
-  try {
-    // Extract FID from Farcaster frame headers if available
-    const fcData = c.req.header('fc-data');
-    if (fcData) {
-      try {
-        const data = JSON.parse(Buffer.from(fcData, 'base64').toString());
-        currentUserFid = data.fid ? Number(data.fid) : null;
-        console.log(`[API] Current user FID from frame: ${currentUserFid}`);
-      } catch (err) {
-        console.error(`[API] Error parsing fc-data header:`, err);
-      }
-    }
-    
-    // If no FID found in headers and we're in development, use fallback FID
-    if (!currentUserFid && config.isDev) {
-      currentUserFid = config.development.fallbackFid;
-      console.log(`[API] Development mode - no FID in headers, using fallback FID: ${currentUserFid}`);
-    }
-  } catch (error) {
-    console.error(`[API] Error extracting user FID:`, error);
-  }
-  
-  return currentUserFid;
-}
-
 // A frame URL must have a FrameEmbed in a serialized form in the fc:frame meta tag in the HTML <head>. 
 // When this URL is rendered in a cast, the image is displayed in a 3:2 ratio with a button underneath. 
 // Clicking the button will open an app frame to the provided action url and use the splash page to 
@@ -96,7 +63,7 @@ app.get('/choose', async (c) => {
   console.log('[/choose] Starting choose endpoint');
   
   // Get current user FID if available
-  const currentUserFid = getCurrentUserFid(c);
+  const currentUserFid = userService.getCurrentUserFid(c);
   console.log(`[/choose] Current user FID: ${currentUserFid || 'none'}`);
   
   try {
@@ -126,7 +93,7 @@ app.post('/select', async (c) => {
     console.log(`[/select] Button index selected: ${buttonIndex}`);
     
     // Get current user FID if available
-    const currentUserFid = getCurrentUserFid(c);
+    const currentUserFid = userService.getCurrentUserFid(c);
     console.log(`[/select] Current user FID: ${currentUserFid || 'none'}`);
     
     try {
@@ -265,7 +232,7 @@ app.get('/share', async (c) => {
   const degree = c.req.query('degree');
 
   // Get current user from frame context
-  const currentUserFid = getCurrentUserFid(c);
+  const currentUserFid = userService.getCurrentUserFid(c);
   console.log(`[SHARE] Share parameters - from: ${fromUser}, to: ${toUser}, degree: ${degree}, currentUser: ${currentUserFid}`);
   
   const buttonIndex = parseInt(c.req.query('buttonIndex')?.toString() || '0');

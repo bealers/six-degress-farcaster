@@ -2,35 +2,17 @@ import { NeynarAPIClient, Configuration } from '@neynar/nodejs-sdk';
 import { User as NeynarUser, HydratedFollower } from '@neynar/nodejs-sdk/build/api';
 import { config } from '../config.js';
 import { GraphAPI, PopularUser, User } from '../types/graph.js';
-
-interface Follower {
-  fid: number;
-}
-
-interface Following {
-  fid: number;
-}
-
-interface UserResponse {
-  user: NeynarUser | null;
-}
-
-export interface NeynarClient {
-  getFollowers(fid: number): Promise<number[]>;
-  getFollowing(fid: number): Promise<number[]>;
-  getUserByUsername(username: string): Promise<User>;
-  getPopularUsers(limit: number): Promise<any[]>;
-}
+import { NeynarServiceOptions } from '../types/neynar.js';
 
 /**
  * Implementation of GraphAPI interface using Neynar service
  */
 export class NeynarService implements GraphAPI {
+  
   private client: NeynarAPIClient;
-  private popularUsersCache: PopularUser[] = [];
-  // Set an initial cache update time to avoid immediate misses
+  private popularUsersCache: PopularUser[] = [];  
   private lastCacheUpdate: number = Date.now(); 
-  // Change this value to adjust cache duration (in minutes)
+    
   private readonly CACHE_MINUTES: number = 30; 
   private readonly CACHE_TTL: number;
   
@@ -38,14 +20,14 @@ export class NeynarService implements GraphAPI {
   private static instanceCount = 0;
   private instanceId: number;
   
-  constructor() {
+  constructor(apiKey: string, options?: NeynarServiceOptions) {
     // Track instance creation
     NeynarService.instanceCount++;
     this.instanceId = NeynarService.instanceCount;
     console.log(`[NEYNAR] Creating NeynarService instance #${this.instanceId}`);
     
     const configuration = new Configuration({
-      apiKey: config.neynar.apiKey,
+      apiKey: apiKey,
     });
     this.client = new NeynarAPIClient(configuration);
     
@@ -53,10 +35,13 @@ export class NeynarService implements GraphAPI {
     this.CACHE_TTL = this.CACHE_MINUTES * 60 * 1000;
     console.log(`[NEYNAR] Cache TTL set to ${this.CACHE_TTL}ms (${this.CACHE_MINUTES} minutes)`);
     
-    // Initialize cache with fallback data
-    this.popularUsersCache = [...FALLBACK_POPULAR_USERS];
-    console.log(`[NEYNAR] Cache initialized with ${this.popularUsersCache.length} fallback users`);
-    console.log(`[NEYNAR] Initial lastCacheUpdate timestamp: ${this.lastCacheUpdate}`);
+    // Initialize with empty array instead of referencing undefined constant
+    this.popularUsersCache = [];
+    
+    // Fetch popular users on initialization
+    this.fetchPopularUsers().catch(err => {
+      console.error('[NEYNAR] Failed to fetch initial popular users:', err);
+    });
   }
 
   async getFollowers(fid: number): Promise<number[]> {
@@ -141,21 +126,21 @@ export class NeynarService implements GraphAPI {
       if (!response.user) {
         throw new Error(`User not found: ${username}`);
       }
-      return response.user;
+      return this.adaptUser(response.user);
     } catch (error) {
       console.error(`Error fetching user by username ${username}:`, error);
       throw new Error(`User not found: ${username}`);
     }
   }
 
-  async lookupUserByFid(fid: number): Promise<User> {
+  async getUserByFid(fid: number): Promise<User> {
     console.log(`Looking up user by FID: ${fid}`);
     try {
       const response = await this.client.fetchBulkUsers({ fids: [fid] });
       if (!response.users?.[0]) {
         throw new Error(`User not found for FID: ${fid}`);
       }
-      return response.users[0];
+      return this.adaptUser(response.users[0]);
     } catch (error) {
       console.error(`Error fetching user by FID ${fid}:`, error);
       throw new Error(`User not found for FID: ${fid}`);
@@ -187,41 +172,18 @@ export class NeynarService implements GraphAPI {
     console.log(`[CACHE MISS #${this.instanceId}] Reason: ${missReason}. Fetching ${limit} popular users from Neynar`);
     
     try {
-      // Try to get users with high engagement from multiple sources
-      let popularUsers: PopularUser[] = [];
+      // Fetch popular users using our fetchPopularUsers method
+      const users = await this.fetchPopularUsers(limit);
       
-      // Method 1: Get verified users with high follower counts
-      try {
-        // Use the FIDs from our fallback list instead of duplicating them
-        const popularFids = FALLBACK_POPULAR_USERS.map(user => user.fid);
+      if (users.length > 0) {
+        // Users are already adapted by fetchPopularUsers, so we can use them directly
+        const popularUsers = users.map(user => ({
+          username: user.username,
+          display: user.display,
+          fid: user.fid,
+          pfpUrl: user.pfpUrl
+        }));
         
-        console.log(`[NEYNAR #${this.instanceId}] Fetching ${popularFids.length} popular users by FID`);
-        const verifiedUsers = await this.client.fetchBulkUsers({ 
-          fids: popularFids
-        });
-        
-        if (verifiedUsers && verifiedUsers.users && verifiedUsers.users.length > 0) {
-          console.log(`[NEYNAR #${this.instanceId}] Received ${verifiedUsers.users.length} users from API`);
-          const users = verifiedUsers.users.map(user => ({
-            username: user.username,
-            display: user.display_name || user.username,
-            fid: user.fid,
-            pfpUrl: user.pfp_url || `https://warpcast.com/~/avatar/${user.fid}`
-          }));
-          
-          popularUsers = [...popularUsers, ...users];
-        } else {
-          console.log(`[NEYNAR #${this.instanceId}] No users returned from API call`);
-        }
-      } catch (error) {
-        console.error(`[NEYNAR #${this.instanceId}] Error fetching verified users:`, error);
-      }
-      
-      // Method 2: Try to get active users
-      // Add other methods to fetch popular users here if needed
-      
-      // If we have users, update cache
-      if (popularUsers.length > 0) {
         // Deduplicate by FID
         const uniqueUsers = Array.from(
           popularUsers.reduce((map, user) => map.set(user.fid, user), new Map())
@@ -234,15 +196,13 @@ export class NeynarService implements GraphAPI {
         return uniqueUsers.slice(0, limit);
       }
       
-      // If we couldn't get any users via API, use fallback
-      console.log(`[FALLBACK #${this.instanceId}] Using predefined popular users list (${FALLBACK_POPULAR_USERS.length} users)`);
-      // Still update the timestamp to prevent frequent retries
-      this.lastCacheUpdate = now; 
-      console.log(`[CACHE UPDATE #${this.instanceId}] Cache timestamp updated to: ${this.lastCacheUpdate}`);
-      return FALLBACK_POPULAR_USERS.slice(0, limit);
+      // If we couldn't get any users, return empty array
+      console.log(`[NEYNAR #${this.instanceId}] No users returned from API call`);
+      this.lastCacheUpdate = now; // Still update timestamp to prevent frequent retries
+      return [];
     } catch (error) {
       console.error(`[NEYNAR #${this.instanceId}] Error fetching popular users:`, error);
-      return FALLBACK_POPULAR_USERS.slice(0, limit);
+      return this.popularUsersCache.slice(0, limit); // Return current cache even if empty
     }
   }
   
@@ -253,7 +213,48 @@ export class NeynarService implements GraphAPI {
    */
   private async fetchActiveCasters(): Promise<PopularUser[]> {
     // This is placeholder for future implementation
-    // when a proper trending/active users API is available
+    // when a trending/active users API is available
     return [];
+  }
+
+  /**
+   * Fetches popular users from Neynar API
+   * @param limit Number of users to fetch
+   * @returns Promise resolving to array of popular users
+   */
+  async fetchPopularUsers(limit: number = 20): Promise<User[]> {
+    try {
+      // Use the Neynar API to fetch trending users
+      console.log(`[NEYNAR #${this.instanceId}] Fetching trending users from API`);
+      const response = await this.client.fetchTrendingFeed({ limit }); // Changed from fetchTrendingUsers to fetchTrendingFeed
+      
+      // Extract users from the feed
+      const users = response.casts
+        .filter(cast => cast.author)
+        .map(cast => this.adaptUser(cast.author));
+      
+      console.log(`[NEYNAR #${this.instanceId}] Extracted ${users.length} unique users from trending feed`);
+      
+      return users;
+    } catch (error) {
+      console.error(`[NEYNAR #${this.instanceId}] Error fetching trending users:`, error);
+      return []; // Return empty array on error
+    }
+  }
+
+  async lookupUserByFid(fid: number): Promise<User> {
+    return this.getUserByFid(fid);
+  }
+
+  /**
+   * Adapts a Neynar user to our application's User interface
+   */
+  private adaptUser(neynarUser: any): User {
+    return {
+      username: neynarUser.username,
+      display: neynarUser.display_name || neynarUser.username,
+      fid: neynarUser.fid,
+      pfpUrl: neynarUser.pfp_url || `https://warpcast.com/~/avatar/${neynarUser.fid}`
+    };
   }
 } 

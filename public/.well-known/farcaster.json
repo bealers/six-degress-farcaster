@@ -7,11 +7,11 @@
   "frame": {
     "version": "next",
     "name": "Six Degrees of Farcaster",
-    "homeUrl": "https://03c6827757840e.lhr.life/",
-    "iconUrl": "https://03c6827757840e.lhr.life/static/splash.png",
-    "imageUrl": "https://03c6827757840e.lhr.life/static/initial.png",
+    "homeUrl": "http://local.bealers.net/",
+    "iconUrl": "http://local.bealers.net/static/splash.png",
+    "imageUrl": "http://local.bealers.net/static/initial.png",
     "buttonTitle": "Find Connection",
-    "splashImageUrl": "https://03c6827757840e.lhr.life/static/splash.png",
+    "splashImageUrl": "http://local.bealers.net/static/splash.png",
     "splashBackgroundColor": "#191919"
   }
 } 

@@ -6,6 +6,7 @@ import { config } from '../config.js';
  * Service for user-related operations
  */
 export class UserService {
+
   private neynarService: GraphAPI;
   
   constructor(neynarService: GraphAPI) {
@@ -147,5 +148,38 @@ export class UserService {
       console.error('[USER SERVICE] Error building social mapping:', error);
       return mapping;
     }
+  }
+
+  /**
+   * Extract the current user's FID from the Farcaster frame context
+   * @param c Hono context containing the request
+   * @returns The user's FID or null if not available
+   */
+  getCurrentUserFid(c: any): number | null {
+    let currentUserFid: number | null = null;
+    
+    try {
+      // Extract FID from Farcaster frame headers if available
+      const fcData = c.req.header('fc-data');
+      if (fcData) {
+        try {
+          const data = JSON.parse(Buffer.from(fcData, 'base64').toString());
+          currentUserFid = data.fid ? Number(data.fid) : null;
+          console.log(`[API] Current user FID from frame: ${currentUserFid}`);
+        } catch (err) {
+          console.error(`[API] Error parsing fc-data header:`, err);
+        }
+      }
+      
+      // If no FID found in headers and we're in development, use fallback FID
+      if (!currentUserFid && config.isDev) {
+        currentUserFid = config.development.fallbackFid;
+        console.log(`[API] Development mode - no FID in headers, using fallback FID: ${currentUserFid}`);
+      }
+    } catch (error) {
+      console.error(`[API] Error extracting user FID:`, error);
+    }
+    
+    return currentUserFid;
   }
 } 

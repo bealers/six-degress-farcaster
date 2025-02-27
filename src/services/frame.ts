@@ -66,7 +66,10 @@ export class FrameService {
    */
   async generateChooseFrame(context: any, currentUserFid?: number | null): Promise<string> {
     // Get a selection of popular users to display
-    const displayPeople = await this.userService.getPopularUserSelection(currentUserFid);
+    const displayPeople = await this.userService.getPopularUserSelection(
+      config.users.displayUsersCount, // Use this for the first parameter
+      currentUserFid || undefined     // Pass currentUserFid as the second parameter
+    );
     
     console.log(`[FRAME] Displaying ${displayPeople.length} popular people`);
     

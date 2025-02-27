@@ -25,7 +25,7 @@ let frameServiceInstance: FrameService | null = null;
 export function getSocialGraphAPI(): GraphAPI {
   if (!socialGraphAPIInstance) {
     console.log("Creating new NeynarService singleton instance");
-    socialGraphAPIInstance = new NeynarService();
+    socialGraphAPIInstance = new NeynarService(config.neynar.apiKey);
   }
   return socialGraphAPIInstance;
 }

@@ -118,4 +118,4 @@ export function generateFrameHtml(options: FrameOptions): string {
     content,
     includeFrameSDK
   });
-} 
+}
