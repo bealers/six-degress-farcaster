@@ -1,10 +1,11 @@
 export interface FrameButton {
   label: string;
-  action?: string; // "post" | "link" etc.
+  action: string;
+  target?: string;
 }
 
 export interface FrameMetadata {
-  version: "next";
+  version: string;
   imageUrl: string;
   input?: {
     text: string;
@@ -13,15 +14,22 @@ export interface FrameMetadata {
   postUrl?: string;
   state?: Record<string, unknown>;
   button?: {
-    title: string; // Button text (32 char max)
+    title: string;
     action: {
-      type: "launch_frame"; // must be this for in-feed frames
-      name?: string; // App name (32 char max)
-      url: string; // Frame launch URL
-      splashImageUrl?: string; // 200x200px splash image
-      splashBackgroundColor?: string; // Hex color code
+      type: string;
+      name?: string;
+      url: string;
+      splashImageUrl?: string;
+      splashBackgroundColor?: string;
     };
   };
+}
+
+export interface FrameData {
+  buttons: FrameButton[];
+  image: string;
+  title: string;
+  description: string;
 }
 
 export interface FrameOptions {

@@ -6,16 +6,18 @@ export interface User {
   display: string;
   fid: number;
   pfpUrl: string;
+  followerCount?: number | string; // Make this optional to maintain compatibility
 }
 
 /**
  * Popular user with additional display information
  */
 export interface PopularUser {
+  fid: number;
   username: string;
   display: string;
-  fid: number;
-  pfpUrl: string;
+  pfp: string;
+  followerCount: number;
 }
 
 /**
@@ -84,4 +86,19 @@ export interface GraphAPI {
    * @returns User information
    */
   lookupUserByFid(fid: number): Promise<User>;
+  
+  /**
+   * Get the count of mutual follows between two users
+   * @param fidA First user's FID
+   * @param fidB Second user's FID
+   * @returns Count of mutual follows
+   */
+  getMutualFollowCount(fidA: number, fidB: number): Promise<number>;
+  
+  /**
+   * Get detailed user information including follower count
+   * @param fid User's FID
+   * @returns Detailed user information
+   */
+  getUserDetailsByFid(fid: number): Promise<User>;
 } 

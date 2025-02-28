@@ -1,123 +1,118 @@
-<h1>Connection Found!</h1>
-
-<p>You are {{degree}} degree{{#plural}}s{{/plural}} away from {{username}} in the Farcaster social graph.</p>
-
-<!-- Connection path visualization -->
-<div class="connection-path" style="margin: 30px 0; text-align: center;">
-  <div style="display: flex; align-items: center; justify-content: space-between; margin: 0 auto; max-width: 90%;">
-    <!-- You -->
-    <div class="connection-node" style="text-align: center;">
-      <div class="avatar" style="width: 70px; height: 70px; border-radius: 50%; background-color: #3f51b5; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid white; position: relative;">
-        <span style="color: white; font-weight: bold; font-size: 18px;">You</span>
-        <!-- Tooltip on hover -->
-        <div style="position: absolute; bottom: -70px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 8px; width: max-content; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; font-size: 14px; color: white; text-align: center;">
-          Your Farcaster Account
-        </div>
-      </div>
-      <div style="margin-top: 10px; font-size: 14px; color: #aaa;">Your account</div>
-    </div>
+<div class="container mx-auto max-w-2xl p-6 text-center">
+  <h1 class="text-4xl font-bold mb-6">Connection Found!</h1>
+  
+  {{#if path}}
+    <p class="text-xl mb-6">
+      {{#if isDirectConnection}}
+        You are directly connected in the Farcaster social graph!
+      {{else}}
+        You are {{degreeCount}} {{degreeText}} away from {{targetUser.username}} in the Farcaster social graph.
+      {{/if}}
+    </p>
     
-    <!-- Connection path - dynamically show based on degree -->
-    <div class="connection-path" style="flex-grow: 1; display: flex; align-items: center; justify-content: space-between; position: relative;">
-      {{#if plural}}
-        <!-- For degree > 1, show multiple connection points -->
-        {{#if connectionPath}}
-          <!-- Connection path visualization -->
-          {{#each connectionPath.path}}
-            {{#unless @first}}
-              {{#unless @last}}
-                <!-- Connection line before node -->
-                <div style="flex: 1; height: 3px; background-color: #7e57c2; position: relative;"></div>
-                
-                <!-- Intermediate node with real user info -->
-                <div class="connection-node" style="z-index: 2; text-align: center; margin: 0 -15px;">
-                  <div class="avatar" style="width: 40px; height: 40px; border-radius: 50%; background-color: #9575cd; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 2px solid white; position: relative; box-shadow: 0 2px 10px rgba(0,0,0,0.3); overflow: hidden;">
-                    {{#if pfpUrl}}
-                      <img src="{{pfpUrl}}" alt="{{username}}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentNode.innerHTML='<span style=\'color: white; font-weight: bold;\'>{{username}}</span>';">
-                    {{else}}
-                      <span style="color: white; font-weight: bold; font-size: 14px;">{{username}}</span>
-                    {{/if}}
-                  </div>
-                  <div style="font-size: 11px; color: #ccc; margin-top: 2px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@{{username}}</div>
-                </div>
-              {{/unless}}
-            {{/unless}}
-          {{/each}}
-          
-          <!-- Final connection line to target -->
-          <div style="flex: 1; height: 3px; background-color: #7e57c2; position: relative;"></div>
-        {{else}}
-          <!-- Error case: Connection path data missing (shouldn't happen with real implementation) -->
-          <div style="flex: 1; height: 3px; background-color: #7e57c2; position: relative; margin: 0 15px;">
-            <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); background-color: #9c27b0; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
-              {{degree}}
+    <!-- Vertical connection visualization -->
+    <div class="flex flex-col items-center my-10 relative">
+      <!-- Source user (you) -->
+      <div class="flex flex-col items-center mb-4">
+        <div class="w-16 h-16 rounded-full bg-indigo-600 flex items-center justify-center overflow-hidden border-2 border-white">
+          {{#if sourceUser.pfpUrl}}
+            <img src="{{sourceUser.pfpUrl}}" alt="You" class="w-full h-full object-cover">
+          {{else}}
+            <span class="text-white font-bold">You</span>
+          {{/if}}
+        </div>
+        <p class="mt-1 font-semibold">
+          <a href="https://warpcast.com/{{sourceUser.username}}" target="_blank" class="text-indigo-400 hover:text-indigo-300">
+            You{{#if sourceUser.username}} (@{{sourceUser.username}}){{/if}}
+          </a>
+        </p>
+      </div>
+      
+      <!-- Connection line and intermediate nodes -->
+      <div class="w-1 bg-gradient-to-b from-indigo-600 to-red-500" style="height: {{#if intermediateNodes}}{{multiply intermediateNodes.length 80}}{{else}}80{{/if}}px;">
+        <!-- Mutual connection count indicator -->
+        {{#unless isDirectConnection}}
+          <div class="relative top-[50%] -translate-y-1/2 -translate-x-1/2">
+            <span class="inline-block px-2 py-1 bg-gray-800 text-sm rounded-md text-gray-300 border border-gray-700">
+              {{#if sourceMutuals}}{{sourceMutuals}}{{else}}?{{/if}} mutual
+            </span>
+          </div>
+        {{/unless}}
+      </div>
+      
+      <!-- Intermediate nodes -->
+      {{#each path}}
+        {{#unless @first}}
+          {{#unless @last}}
+            <div class="flex flex-col items-center my-4">
+              <div class="w-16 h-16 rounded-full bg-purple-500 flex items-center justify-center overflow-hidden border-2 border-white">
+                <img src="{{pfpUrl}}" alt="{{username}}" class="w-full h-full object-cover">
+              </div>
+              <p class="mt-1 font-semibold">
+                <a href="https://warpcast.com/{{username}}" target="_blank" class="text-purple-400 hover:text-purple-300">
+                  @{{username}}
+                </a>
+              </p>
+              <div class="text-xs text-gray-400 mt-1">{{followerCount}} followers</div>
             </div>
-          </div>
-        {{/if}}
-      {{else}}
-        <!-- For direct connection (degree=1) -->
-        <div style="flex: 1; height: 3px; background-color: #7e57c2; position: relative; margin: 0 15px;">
-          <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); background-color: #9c27b0; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
-            1
-          </div>
+            
+            {{#unless @last}}
+              <div class="w-1 bg-gradient-to-b from-purple-500 to-red-500" style="height: 80px;">
+                <!-- Mutual connection count indicator -->
+                <div class="relative top-[50%] -translate-y-1/2 -translate-x-1/2">
+                  <span class="inline-block px-2 py-1 bg-gray-800 text-sm rounded-md text-gray-300 border border-gray-700">
+                    {{#if ../mutuals}}
+                      {{lookup ../mutuals @index}} mutual
+                    {{else}}
+                      ? mutual
+                    {{/if}}
+                  </span>
+                </div>
+              </div>
+            {{/unless}}
+          {{/unless}}
+        {{/unless}}
+      {{/each}}
+      
+      <!-- Target user -->
+      <div class="flex flex-col items-center mt-4">
+        <div class="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center overflow-hidden border-2 border-white">
+          <img src="{{targetUser.pfpUrl}}" alt="{{targetUser.username}}" class="w-full h-full object-cover">
         </div>
-      {{/if}}
+        <p class="mt-1 font-semibold">
+          <a href="https://warpcast.com/{{targetUser.username}}" target="_blank" class="text-red-400 hover:text-red-300">
+            @{{targetUser.username}}
+          </a>
+        </p>
+      </div>
     </div>
     
-    <!-- Target person -->
-    <div class="connection-node" style="text-align: center;">
-      <div class="avatar" style="width: 70px; height: 70px; border-radius: 50%; background-color: #f44336; margin: 0 auto; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-        <img src="https://warpcast.com/~/avatar/{{targetFid}}" alt="{{username}}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentNode.innerHTML='<span style=\'color: white; font-weight: bold;\'>{{username}}</span>';">
-      </div>
-      <div style="margin-top: 10px; font-size: 14px; color: white;">@{{username}}</div>
+    <div class="mb-6">
+      <p class="text-gray-300 italic">
+        {{#if isDirectConnection}}
+          You're directly connected in the Farcaster social graph!
+        {{else}}
+          Connected through {{pathUsernames}}
+        {{/if}}
+      </p>
+      <p class="text-gray-400 text-sm mt-2">
+        Connection strength is based on mutual follows in the Farcaster network
+      </p>
     </div>
-  </div>
-  
-  <div style="margin-top: 40px; text-align: center; color: #ccc; font-style: italic; font-size: 16px;">
-    {{#if plural}}
-      {{#if connectionPath}}
-        <!-- Display connection path description -->
-        You're connected through:
-        <div style="margin-top: 10px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px;">
-          {{#each connectionPath.path}}
-            {{#unless @first}}
-              {{#unless @last}}
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.1); border-radius: 12px; padding: 3px 8px;">
-                  <span style="margin-right: 3px;">@{{username}}</span>
-                </span>
-                {{#unless @last}}
-                  {{#unless (eq @index (subtract ../connectionPath.path.length 1))}}
-                    <span style="color: #666; margin: 0 2px;">→</span>
-                  {{/unless}}
-                {{/unless}}
-              {{/unless}}
-            {{/unless}}
-          {{/each}}
-        </div>
-      {{else}}
-        <!-- Unlikely error case - missing connection path -->
-        You're connected through other people in the Farcaster social graph.
-      {{/if}}
-    {{else}}
-      You're directly connected in the Farcaster social graph!
-    {{/if}}
-  </div>
-  
-  <div style="margin-top: 15px; text-align: center; font-size: 14px; color: #999;">
-    Connection strength is based on mutual follows in the Farcaster network
-  </div>
-</div>
-
-<div class="btn-group" style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
-  <form action="{{shareUrl}}" method="post" style="flex: 1; max-width: 200px;">
-    <input type="hidden" name="buttonIndex" value="1">
-    <input type="hidden" name="state" value="{{state}}">
-    <button type="submit" class="btn" style="width: 100%; padding: 12px; background-color: #673ab7; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Share My Connection</button>
-  </form>
-  
-  <form action="{{shareUrl}}" method="post" style="flex: 1; max-width: 200px;">
-    <input type="hidden" name="buttonIndex" value="2">
-    <input type="hidden" name="state" value="{{state}}">
-    <button type="submit" class="btn" style="width: 100%; padding: 12px; background-color: #444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Try Another</button>
-  </form>
+    
+    <div class="flex justify-center gap-4">
+      <a href="/share?path={{encodedPath}}" 
+         class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200 inline-block">
+        Share My Connection
+      </a>
+      <a href="/choose" 
+         class="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg border border-gray-600 transition-colors duration-200 inline-block">
+        Try Another
+      </a>
+    </div>
+  {{else}}
+    <p class="text-xl mb-6">No connection found.</p>
+    <p class="text-gray-400 mb-10">We couldn't find a connection path between these users in the Farcaster social graph.</p>
+    <a href="/choose" class="btn-primary">Try Again</a>
+  {{/if}}
 </div>

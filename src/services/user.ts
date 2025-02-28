@@ -15,10 +15,10 @@ export class UserService {
   
   /**
    * Get a user by their FID
-   * @param fid User FID to fetch
-   * @returns User object or null if not found
+   * @param fid The FID to lookup
+   * @returns Promise resolving to a User object
    */
-  async getUserByFid(fid: number): Promise<User | null> {
+  async getUserByFid(fid: number): Promise<User> {
     return await this.neynarService.getUserByFid(fid);
   }
   
@@ -181,5 +181,14 @@ export class UserService {
     }
     
     return currentUserFid;
+  }
+
+  /**
+   * Get a user by their username
+   * @param username The username to lookup (with or without @)
+   * @returns Promise resolving to a User object
+   */
+  async getUserByUsername(username: string): Promise<User> {
+    return await this.neynarService.getUserByUsername(username);
   }
 } 

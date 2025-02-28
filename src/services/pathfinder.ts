@@ -9,44 +9,67 @@ const CONNECTION_BATCH_SIZE = 100; // Number of connections to process in a batc
 const TIMEOUT_MS = 60000; // 60 second timeout for path finding
 
 export class PathFinder {
-  private api: GraphAPI;
-  private db: Database;
-
-  constructor(api: GraphAPI, db: Database) {
-    this.api = api;
-    this.db = db;
+  constructor(
+    private db: Database,
+    private api: GraphAPI
+  ) {
+    console.log('[PATHFINDER] Initialized with database and GraphAPI');
+    
+    // Verify API methods are available
+    this.verifyApiMethods();
+  }
+  
+  // Verify that required API methods are available
+  private verifyApiMethods(): void {
+    const requiredMethods = ['getFollowers', 'getFollowing', 'getUserByFid'];
+    const missingMethods = requiredMethods.filter(
+      method => typeof (this.api as any)[method] !== 'function'
+    );
+    
+    if (missingMethods.length > 0) {
+      console.error(`[PATHFINDER] Warning: GraphAPI is missing required methods: ${missingMethods.join(', ')}`);
+    } else {
+      console.log('[PATHFINDER] GraphAPI interface verification passed');
+    }
   }
 
-  async findPath(fromUsername: string, toUsername: string): Promise<number[]> {
-    console.log(`[PATHFINDER] Starting path search from @${fromUsername} to @${toUsername}`);
+  async findPath(fromFid: number, toFid: number): Promise<number[]> {
+    console.log(`[PATHFINDER] Starting path search from ${fromFid} to ${toFid}`);
     
-    // Get FIDs for both usernames
-    const [fromUser, toUser] = await Promise.all([
-      this.api.getUserByUsername(fromUsername),
-      this.api.getUserByUsername(toUsername)
-    ]);
-
-    console.log(`[PATHFINDER] Resolved usernames to FIDs: ${fromUser.fid} -> ${toUser.fid}`);
-    
-    // Check if this is a search for the same user
-    if (fromUser.fid === toUser.fid) {
-      console.log(`[PATHFINDER] Self-connection detected, returning direct path`);
-      return [fromUser.fid];
-    }
-
-    // Try to find a cached path first
     try {
-      const cachedPath = await this.findCachedPath(fromUser.fid, toUser.fid);
-      if (cachedPath) {
-        console.log(`[PATHFINDER] Found cached path: ${cachedPath.join(' -> ')}`);
-        return cachedPath;
-      }
-    } catch (error) {
-      console.log(`[PATHFINDER] No cached path found, will perform BFS search`);
-    }
+      // Get source and target user details by FID
+      const [sourceUser, targetUser] = await Promise.all([
+        this.api.getUserByFid(fromFid),
+        this.api.getUserByFid(toFid)
+      ]);
 
-    // Start the BFS search with a timeout
-    return this.findShortestPathWithTimeout(fromUser.fid, toUser.fid);
+      console.log(`[PATHFINDER] Resolved usernames to FIDs: ${sourceUser.fid} -> ${targetUser.fid}`);
+      
+      // Check if this is a search for the same user
+      if (sourceUser.fid === targetUser.fid) {
+        console.log(`[PATHFINDER] Self-connection detected, returning direct path`);
+        return [sourceUser.fid];
+      }
+
+      // Try to find a cached path first
+      try {
+        const cachedPath = await this.findCachedPath(sourceUser.fid, targetUser.fid);
+        if (cachedPath) {
+          console.log(`[PATHFINDER] Found cached path: ${cachedPath.join(' -> ')}`);
+          return cachedPath;
+        }
+      } catch (error) {
+        console.log(`[PATHFINDER] No cached path found, will perform BFS search`);
+      }
+
+      // Start the BFS search with a timeout
+      return this.findShortestPath(sourceUser.fid, targetUser.fid);
+    } catch (error) {
+      console.error('[PATHFINDER] Error checking for direct connection:', error);
+      console.log('[PATHFINDER] Will continue with BFS search anyway');
+      // Use the wrapper with timeout for consistency
+      return this.findShortestPath(fromFid, toFid);
+    }
   }
 
   private async findCachedPath(fromFid: number, toFid: number): Promise<number[] | null> {
@@ -93,7 +116,22 @@ export class PathFinder {
     }
   }
 
-  private async findShortestPathWithTimeout(fromFid: number, toFid: number): Promise<number[]> {
+  /**
+   * Find the shortest path between two users
+   * Uses timeout protection by default
+   * @param fromFid Starting user FID
+   * @param toFid Target user FID
+   * @param useTimeout Whether to use timeout protection (default: true)
+   * @returns Promise resolving to path of FIDs
+   */
+  async findShortestPath(fromFid: number, toFid: number, useTimeout: boolean = true): Promise<number[]> {
+    console.log(`[PATHFINDER] Finding shortest path from ${fromFid} to ${toFid} (timeout: ${useTimeout ? 'enabled' : 'disabled'})`);
+    
+    if (!useTimeout) {
+      // Run BFS directly without timeout if explicitly requested
+      return this.runBFSSearch(fromFid, toFid);
+    }
+    
     return new Promise((resolve, reject) => {
       // Set a timeout to prevent long-running searches
       const timeoutId = setTimeout(() => {
@@ -101,7 +139,7 @@ export class PathFinder {
       }, TIMEOUT_MS);
 
       // Start the BFS search
-      this.findShortestPath(fromFid, toFid)
+      this.runBFSSearch(fromFid, toFid)
         .then(path => {
           clearTimeout(timeoutId);
           resolve(path);
@@ -116,17 +154,17 @@ export class PathFinder {
   /**
    * Uses BFS to find the shortest path between users
    */
-  async findShortestPath(fromFid: number, toFid: number): Promise<number[]> {
-    console.log(`[PATHFINDER] Finding shortest path from FID: ${fromFid} to FID: ${toFid} with max depth ${MAX_DEPTH}`);
+  private async runBFSSearch(fromFid: number, toFid: number): Promise<number[]> {
+    console.log(`[PATHFINDER] Running BFS search from FID: ${fromFid} to FID: ${toFid} with max depth ${MAX_DEPTH}`);
 
     // Early detection for direct connections
     try {
       // Check if these users have a direct connection already
-      const connections = await this.db.getConnections(fromFid);
+      const connections = await this.getConnections(fromFid);
       
       if (connections && connections.length > 0) {
         console.log(`[PATHFINDER] Found ${connections.length} existing connections for ${fromFid}`);
-        if (connections.some(conn => conn.to_fid === toFid)) {
+        if (connections.some(conn => conn === toFid)) {
           console.log(`[PATHFINDER] Direct connection found from ${fromFid} to ${toFid}`);
           return [fromFid, toFid];
         }
@@ -250,9 +288,8 @@ export class PathFinder {
   }
 
   async updateConnectionGraph(): Promise<void> {
-    // This would be called periodically to update the connection graph
-    // For now, we'll rely on discovering connections during path finding
-    // TODO: Implement background graph updates
+    // TODO: Called periodically to update the connection graph
+    // For now, we'll rely on discovering connections during path finding 
   }
 
   /**
@@ -264,6 +301,54 @@ export class PathFinder {
     } catch (error) {
       console.error(`[PATHFINDER] Error retrieving user info for FID ${fid}:`, error);
       return null;
+    }
+  }
+
+  /**
+   * Initialize or reinitialize the pathfinder with new dependencies
+   */
+  public init(db: Database, api: GraphAPI): void {
+    this.db = db;
+    this.api = api;
+    console.log('[PATHFINDER] Initialized with database and API');
+    this.verifyApiMethods();
+  }
+
+  /**
+   * Get stored connections for a user from the database
+   */
+  private async getConnections(fid: number): Promise<number[]> {
+    try {
+      // Check if we're using the database interface properly
+      if (!this.db) {
+        console.error('[PATHFINDER] Database not initialized');
+        return [];
+      }
+      
+      // Use the db's getStoredConnections method if it exists
+      if (typeof this.db.getStoredConnections === 'function') {
+        return await this.db.getStoredConnections(fid);
+      }
+      
+      // If no specific method, try a fallback approach
+      console.log('[PATHFINDER] Database missing getConnections method, using API methods directly');
+      
+      // Get connections directly from the API
+      if (this.api) {
+        const [followers, following] = await Promise.all([
+          this.api.getFollowers(fid),
+          this.api.getFollowing(fid)
+        ]);
+        
+        // Combine unique followers and following
+        const connections = [...new Set([...followers, ...following])];
+        return connections;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error(`[PATHFINDER] Error getting connections for FID ${fid}:`, error);
+      return [];
     }
   }
 } 

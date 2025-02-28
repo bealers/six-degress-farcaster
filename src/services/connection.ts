@@ -3,28 +3,26 @@ import { Database } from './db.js';
 import { PathFinder } from './pathfinder.js';
 import { config } from '../config.js';
 import { render } from '../utils/template.js';
-import { cleanUrl, generateFrameMetadata } from '../utils/frame.js';
 import type { User, ConnectionPath } from '../types/index.js';
 import { GraphAPI } from '../types/graph.js';
 import { Hono } from 'hono';
+import { UserService } from './user.js';
+import { FrameService } from './frame.js';
 
 export class ConnectionService {
-  private graphAPI: GraphAPI;
-  private db: Database;
   private pathFinder!: PathFinder;
+  private activeCalculations = 0;
+  private readonly MAX_CONCURRENT = 5;
 
-  constructor(hubUrl: string, graphAPI: GraphAPI) {
+  constructor(
+    private db: Database,
+    private graphAPI: GraphAPI,
+    private userService: UserService,
+    private frameService: FrameService
+  ) {
+    console.log('[DATABASE] Initializing database tables');
     
-    // Use the provided social graph API implementation
-    this.graphAPI = graphAPI;
-    
-    // Initialize database connection
-    this.db = new Database(
-      config.database.url,
-      config.database.authToken
-    );
-    
-    // Ensure database is initialized before creating the PathFinder
+    // Call the initDatabase method in the constructor
     this.initDatabase().catch(err => {
       console.error('[DATABASE] Error initializing database:', err);
     });
@@ -36,7 +34,7 @@ export class ConnectionService {
     console.log('[DATABASE] Database initialized successfully');
     
     // Only create PathFinder after database is initialized
-    this.pathFinder = new PathFinder(this.graphAPI, this.db);
+    this.pathFinder = new PathFinder(this.db, this.graphAPI);
     console.log('[DATABASE] PathFinder initialized with database access');
   }
 
@@ -79,8 +77,8 @@ export class ConnectionService {
     try {
       // Use the path finder to calculate connection
       console.log(`[CONNECTION] Finding path from FID ${fromFid} to FID ${toFid}`);
-      // Cast the FIDs to strings if pathFinder expects strings
-      const path = await this.pathFinder.findPath(String(fromFid), String(toFid));
+      
+      const path = await this.pathFinder.findPath(fromFid, toFid);
       
       // Check if a path was found
       if (path && path.length > 0) {
@@ -180,8 +178,8 @@ export class ConnectionService {
       
       console.log(`[CONNECTION] Final degree of separation: ${degreeOfSeparation}`);
       
-      const resultImageUrl = cleanUrl(`${config.hostUrl}/static/result.png`);
-      const shareUrl = cleanUrl(`${config.hostUrl}/share`);
+      const resultImageUrl = this.cleanUrl(`${config.hostUrl}/static/result.png`);
+      const shareUrl = this.cleanUrl(`${config.hostUrl}/share`);
       const stateObj = { 
         targetUsername, 
         targetFid: targetUser.fid, 
@@ -193,7 +191,7 @@ export class ConnectionService {
         title: `Connection to ${targetUsername}`,
         description: `You are ${degreeOfSeparation} degree${degreeOfSeparation > 1 ? 's' : ''} away from ${targetUsername} in the Farcaster social graph`,
         imageUrl: resultImageUrl,
-        frameMetadata: generateFrameMetadata({
+        frameMetadata: this.frameService.generateFrameMetadata({
           version: "next",
           imageUrl: resultImageUrl,
           buttons: [
@@ -229,14 +227,14 @@ export class ConnectionService {
    * Render a standardized error response
    */
   private renderErrorResponse(context: any, errorMessage: string) {
-    const errorImageUrl = cleanUrl(`${config.hostUrl}/static/error.png`);
-    const homeUrl = cleanUrl(`${config.hostUrl}/choose`);
+    const errorImageUrl = this.cleanUrl(`${config.hostUrl}/static/error.png`);
+    const homeUrl = this.cleanUrl(`${config.hostUrl}/choose`);
 
     return context.html(render('error', {
       title: "Error",
       description: "An error occurred",
       imageUrl: errorImageUrl,
-      frameMetadata: generateFrameMetadata({
+      frameMetadata: this.frameService.generateFrameMetadata({
         version: "next",
         imageUrl: errorImageUrl,
         buttons: [{
@@ -256,14 +254,14 @@ export class ConnectionService {
    * Render a response for when no connection is found
    */
   private renderNoConnectionResponse(context: any, targetUser: any) {
-    const noConnectionImageUrl = cleanUrl(`${config.hostUrl}/static/no-connection.png`);
-    const homeUrl = cleanUrl(`${config.hostUrl}/choose`);
+    const noConnectionImageUrl = this.cleanUrl(`${config.hostUrl}/static/no-connection.png`);
+    const homeUrl = this.cleanUrl(`${config.hostUrl}/choose`);
 
     return context.html(render('no-connection', {
       title: "No Connection Found",
       description: `No connection found to ${targetUser.username}`,
       imageUrl: noConnectionImageUrl,
-      frameMetadata: generateFrameMetadata({
+      frameMetadata: this.frameService.generateFrameMetadata({
         version: "next",
         imageUrl: noConnectionImageUrl,
         buttons: [{
@@ -325,4 +323,48 @@ export class ConnectionService {
       throw new Error('Failed to authenticate user: ' + (error as Error).message);
     }
   }
+
+  /**
+   * Reset the database by dropping and recreating all tables
+   * Only available in development mode
+   */
+  async resetDatabase(): Promise<void> {
+    if (!config.isDev) {
+      throw new Error('Database reset is only available in development mode');
+    }
+    
+    console.log('[DATABASE] Resetting database...');
+    
+    try {
+      // We need to access the underlying db object to run DROP TABLE statements
+      if (this.db['sqlite']) {
+        // For SQLite
+        await this.db['sqliteRun']('DROP TABLE IF EXISTS searches');
+        await this.db['sqliteRun']('DROP TABLE IF EXISTS connections');
+      } else if (this.db['client']) {
+        // For Turso
+        await this.db['client'].execute('DROP TABLE IF EXISTS searches');
+        await this.db['client'].execute('DROP TABLE IF EXISTS connections');
+      } else {
+        throw new Error('Unable to access database connection');
+      }
+      
+      // Recreate tables
+      await this.db.init();
+      
+      // Reinitialize the database with the social graph API
+      await this.initDatabase();
+      
+      console.log('[DATABASE] Database reset completed successfully');
+    } catch (error) {
+      console.error('[DATABASE] Error resetting database:', error);
+      throw error;
+    }
+  }
+  
+  private cleanUrl(url: string): string {
+    return url.replace(/([^:])\/{2,}/g, "$1/");
+  }
+
+
 } 

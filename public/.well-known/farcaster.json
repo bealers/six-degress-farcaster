@@ -1,17 +1,17 @@
 {
   "accountAssociation": {
     "header": "eyJhbGciOiJIUzI1NiJ9",
-    "payload": "eyJkb21haW4iOiIwM2M2ODI3NzU3ODQwZS5saHIubGlmZSJ9",
+    "payload": "eyJkb21haW4iOiJsb2NhbC5iZWFsZXJzLm5ldCJ9",
     "signature": "dGhpc19pc19hX2R1bW15X3NpZ25hdHVyZQ"
   },
   "frame": {
     "version": "next",
     "name": "Six Degrees of Farcaster",
-    "homeUrl": "http://local.bealers.net/",
-    "iconUrl": "http://local.bealers.net/static/splash.png",
-    "imageUrl": "http://local.bealers.net/static/initial.png",
+    "homeUrl": "https://local.bealers.net/",
+    "iconUrl": "https://local.bealers.net/static/splash.png",
+    "imageUrl": "https://local.bealers.net/static/result.png",
     "buttonTitle": "Find Connection",
-    "splashImageUrl": "http://local.bealers.net/static/splash.png",
+    "splashImageUrl": "https://local.bealers.net/static/splash.png",
     "splashBackgroundColor": "#191919"
   }
 } 

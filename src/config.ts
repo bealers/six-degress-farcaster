@@ -13,10 +13,10 @@ for (const envVar of requiredEnvVars) {
 }
 
 export const config = {
-  port: parseInt(process.env.PORT || '3000', 10),
-  hostUrl: process.env.HOST_URL || 'http://localhost:3000',
+  port: parseInt(process.env.PORT || '3030', 10),
+  hostUrl: process.env.HOST_URL || 'http://localhost',
   neynar: {
-    apiKey: process.env.NEYNAR_API_KEY!,
+    apiKey: process.env.NEYNAR_API_KEY!, // required
     rpcUrl: process.env.NEYNAR_RPC_URL,
     webhookUrl: process.env.NEYNAR_WEBHOOK_URL,
     hubUrl: process.env.NEYNAR_HUB_URL
@@ -33,8 +33,7 @@ export const config = {
   },
   isDev: process.env.NODE_ENV !== 'production',
   development: {
-    // Fallback FID for development mode when frame headers aren't available
-    // This should be the developer's own FID for testing
+    // Fallback FID for when in development mode and frame headers aren't available
     fallbackFid: parseInt(process.env.DEV_FID || '22438', 10)
   }
 } as const; 

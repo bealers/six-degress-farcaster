@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Handlebars from 'handlebars';
+import { config } from '../config.js';
 
 // Get the directory name for the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -69,6 +70,11 @@ Handlebars.registerHelper('subtract', function(
   return a - b;
 });
 
+// Add this to your existing Handlebars helpers
+Handlebars.registerHelper('multiply', function(a, b) {
+  return a * b;
+});
+
 // Cache for compiled templates and styles
 const templateCache: Record<string, Handlebars.TemplateDelegate> = {};
 const styleCache: Record<string, string> = {};
@@ -88,38 +94,54 @@ function getTemplate(templateName: string): Handlebars.TemplateDelegate {
 }
 
 /**
- * Read styles from disk or cache
+ * Get styles for embedding in templates
  */
 function getStyles(): string {
-  const stylePath = path.join(stylesDir, 'main.css');
-  
-  if (!styleCache[stylePath]) {
-    styleCache[stylePath] = fs.readFileSync(stylePath, 'utf-8');
+  try {
+    // No longer loading styles from file since we're using external CSS
+    return ''; // Return empty string instead of trying to load file
+    
+    // Or alternatively, point to new location:
+    // return fs.readFileSync(path.join(process.cwd(), 'public/static/styles.css'), 'utf8');
+  } catch (error) {
+    console.warn('Could not load styles:', error);
+    return '';
   }
-  
-  return styleCache[stylePath];
 }
 
 /**
  * Render a template with the provided data
  */
-export function render(templateName: string, data: Record<string, any>): string {
-  // Get the base template
-  const baseTemplate = getTemplate('base');
+export function render(templateName: string, data?: any) {
+  const fullData = {
+    ...(data || {}),
+    isDev: config.isDev,
+    // Add any other global template data here
+  };
   
+  return renderTemplate(templateName, fullData);
+}
+
+function renderTemplate(templateName: string, data: Record<string, any>): string {
   // Get the specific template
   const specificTemplate = getTemplate(templateName);
+  
+  // Set default title if not provided
+  data.title = data.title || 'Six Degrees of Farcaster';
   
   // Get the CSS
   const styles = getStyles();
   
-  // Render the specific template with the provided data
-  const renderedContent = specificTemplate(data);
+  // First render the specific template with the provided data
+  const contentHtml = specificTemplate(data);
   
-  // Combine with the base template
+  // Then get and render the base template with the content
+  const baseTemplate = getTemplate('base');
+  
+  // Create combined data with the rendered content
   const combinedData = {
     ...data,
-    content: renderedContent,
+    content: contentHtml,
     styles
   };
   

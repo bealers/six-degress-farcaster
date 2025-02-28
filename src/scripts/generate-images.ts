@@ -28,7 +28,7 @@ export async function generateInitialImage(): Promise<void> {
 
   await sharp(Buffer.from(svg))
     .png()
-    .toFile('public/static/initial.png');
+    .toFile('public/static/img/initial.png');
 }
 
 export async function generateSplashImage(): Promise<void> {
@@ -55,7 +55,7 @@ export async function generateSplashImage(): Promise<void> {
 
   await sharp(Buffer.from(svg))
     .png()
-    .toFile('public/static/splash.png');
+    .toFile('public/static/img/splash.png');
 }
 
 export async function generateSearchImage(): Promise<void> {
@@ -73,7 +73,7 @@ export async function generateSearchImage(): Promise<void> {
 
   await sharp(Buffer.from(svg))
     .png()
-    .toFile('public/static/search.png');
+    .toFile('public/static/img/search.png');
 }
 
 export async function generateResultImage(): Promise<void> {
@@ -151,7 +151,7 @@ export async function generateResultImage(): Promise<void> {
 
   await sharp(Buffer.from(svg))
     .png()
-    .toFile('public/static/result.png');
+    .toFile('public/static/img/result.png');
 }
 
 export async function generateShareImage(): Promise<void> {
@@ -224,7 +224,7 @@ export async function generateShareImage(): Promise<void> {
 
   await sharp(Buffer.from(svg))
     .png()
-    .toFile('public/static/share.png');
+    .toFile('public/static/img/share.png');
 }
 
 export async function generateErrorImage(): Promise<void> {
@@ -242,7 +242,7 @@ export async function generateErrorImage(): Promise<void> {
 
   await sharp(Buffer.from(svg))
     .png()
-    .toFile('public/static/error.png');
+    .toFile('public/static/img/error.png');
 }
 
 export async function generateNoConnectionImage(): Promise<void> {
@@ -302,14 +302,14 @@ export async function generateNoConnectionImage(): Promise<void> {
 
   await sharp(Buffer.from(svg))
     .png()
-    .toFile('public/static/no-connection.png');
+    .toFile('public/static/img/no-connection.png');
 }
 
 export async function generateAllImages(): Promise<void> {
   console.log('Generating all static images...');
   
-  // Ensure the static directory exists
-  await mkdir('public/static', { recursive: true });
+  // Ensure the img directory exists
+  await mkdir('public/static/img', { recursive: true });
   
   try {
     await Promise.all([

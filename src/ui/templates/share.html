@@ -1,41 +1,43 @@
-<h1>Six Degrees of Farcaster</h1>
+<div class="container mx-auto max-w-2xl p-6 text-center">
+  <h1 class="text-4xl font-bold mb-6">Six Degrees of Farcaster</h1>
 
-<p>I'm {{degree}} degree{{#plural}}s{{/plural}} away from {{username}} in the Farcaster network! What's your connection?</p>
+  <p class="text-xl mb-6">I'm {{degree}} degree{{#plural}}s{{/plural}} away from {{username}} in the Farcaster network! What's your connection?</p>
 
-<!-- Shareable connection visualization -->
-<div class="connection-share" style="margin: 30px auto; text-align: center; background-color: rgba(0,0,0,0.2); padding: 25px; border-radius: 16px; max-width: 600px;">
-  <div style="display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-    <!-- Me -->
-    <div class="connection-node" style="text-align: center;">
-      <div class="avatar" style="width: 70px; height: 70px; border-radius: 50%; background-color: #3f51b5; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid white;">
-        <span style="color: white; font-weight: bold; font-size: 18px;">Me</span>
+  <!-- Shareable connection visualization -->
+  <div class="bg-gray-800/50 p-6 rounded-xl my-8">
+    <div class="flex items-center justify-center">
+      <!-- Me -->
+      <div class="text-center">
+        <div class="w-16 h-16 rounded-full bg-indigo-600 mx-auto flex items-center justify-center border-2 border-white">
+          <span class="text-white font-bold">Me</span>
+        </div>
+      </div>
+      
+      <!-- Connection line with degree number -->
+      <div class="w-32 h-1 bg-gray-600 relative mx-4">
+        <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-purple-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold border-2 border-purple-300">
+          {{degree}}
+        </div>
+      </div>
+      
+      <!-- Target person -->
+      <div class="text-center">
+        <div class="w-16 h-16 rounded-full bg-red-500 mx-auto flex items-center justify-center overflow-hidden border-2 border-white">
+          <span class="text-white font-bold text-sm">@{{username}}</span>
+        </div>
       </div>
     </div>
     
-    <!-- Connection line with degree number -->
-    <div class="connection-line" style="width: 120px; height: 3px; background-color: #555; position: relative; margin: 0 15px;">
-      <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); background-color: #7e57c2; color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid #9575cd;">
-        {{degree}}
-      </div>
-    </div>
-    
-    <!-- Target person -->
-    <div class="connection-node" style="text-align: center;">
-      <div class="avatar" style="width: 70px; height: 70px; border-radius: 50%; background-color: #f44336; margin: 0 auto; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid white;">
-        <span style="color: white; font-weight: bold; font-size: 18px;">@{{username}}</span>
-      </div>
+    <div class="mt-6 text-center text-gray-300 text-lg">
+      {{#if plural}}
+        I'm connected through {{degree}} people in the Farcaster social graph!
+      {{else}}
+        I'm directly connected in the Farcaster social graph!
+      {{/if}}
     </div>
   </div>
-  
-  <div style="margin-top: 25px; text-align: center; color: #ccc; font-size: 16px;">
-    {{#if plural}}
-      I'm connected through {{degree}} people in the Farcaster social graph!
-    {{else}}
-      I'm directly connected in the Farcaster social graph!
-    {{/if}}
-  </div>
-</div>
 
-<div style="text-align: center; margin-top: 20px;">
-  <a href="{{homeUrl}}" class="btn" style="display: inline-block; padding: 12px 30px; background-color: #673ab7; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Check Your Connection</a>
+  <div class="mt-6">
+    <a href="{{homeUrl}}" class="btn-primary">Check Your Connection</a>
+  </div>
 </div>

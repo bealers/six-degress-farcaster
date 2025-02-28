@@ -1,10 +1,16 @@
-<!-- For in-feed frames, the image is not needed in the HTML body -->
-<!-- Only the meta tags are used by Farcaster clients -->
+<div class="container mx-auto max-w-2xl p-6 text-center">
+  <!-- For in-feed frames, the image is not needed in the HTML body -->
+  <!-- Only the meta tags are used by Farcaster clients -->
 
-<h1>Six Degrees of Farcaster</h1>
+  <h1 class="text-4xl font-bold mb-6">Six Degrees of Farcaster</h1>
 
-<p>Map your social connection to other Farcaster users based on the theory of six degrees of separation.</p>
+  <p class="text-xl mb-6">Map your social connection to other Farcaster users based on the theory of six degrees of separation.</p>
 
-<p>How connected are you?</p>
+  <div class="my-10">
+    <img src="{{imageUrl}}" alt="Six Degrees of Farcaster" class="mx-auto max-w-full rounded-lg">
+  </div>
 
-<a href="{{frameUrl}}" class="btn">Find Out Now</a>
+  <p class="text-lg mb-6">How connected are you to other Farcasters?</p>
+
+  <a href="{{frameUrl}}" class="btn-primary">Find Out Now</a>
+</div>

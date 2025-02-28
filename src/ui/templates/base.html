@@ -5,34 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{title}}</title>
   
-  <!-- Farcaster Frame Metadata - before OG tags for proper detection -->
+  <!-- Load the Frame SDK -->
+  <script src="https://embed.warpcast.com/sdk.js"></script>
+  
+  <!-- 
+    |                   |                            |    |         
+    __ \    _ \   _` |  |   _ \   __|  __|      _ \  __|  __ \      
+    |   |   __/  (   |  |   __/  |   \__ \      __/  |    | | |     
+   _.__/  \___| \__,_| _| \___| _|   ____/ _) \___| \__| _| |_|     
+
+  https://github.com/bealers
+  -->
+
+  <!-- Farcaster metadata goes before OG -->
   {{{frameMetadata}}}
   
-  <!-- OpenGraph tags for general web sharing -->
+  <!-- OpenGraph for web sharing -->
   <meta property="og:title" content="{{title}}" />
   <meta property="og:description" content="{{description}}" />
   <meta property="og:image" content="{{imageUrl}}" />
   <meta property="og:url" content="{{hostUrl}}" />
   <meta property="og:type" content="website" />
   
-  <style>
-    {{{styles}}}
-  </style>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="container">
+<body class="bg-black text-white flex flex-col min-h-screen">
+  <main class="flex-grow">
     {{{content}}}
-  </div>
+  </main>
   
-  <div class="footer">
-    <p>dev: <a href="https://warpcast.com/bealers" target="_blank">bealers</a> data: <a href="https://warpcast.com/neynar" target="_blank">neynar</a></p> 
-  </div>
+  <!-- Footer -->
+  <footer class="py-8 mt-auto">
+    <div class="container mx-auto px-4 text-center text-gray-400 text-sm">
+      <p>Six Degrees of Farcaster - Find your social connections</p>
+      <p class="mt-2">
+        <a href="https://github.com/your-username/six-degrees-farcaster" target="_blank" class="text-indigo-400 hover:text-indigo-300">
+          Open Source on GitHub
+        </a>
+      </p>
+    </div>
+    
+    {{#if isDev}}
+    <!-- Development Environment Controls -->
+    <div class="mt-6 p-4 bg-gray-800 border border-gray-700 rounded-lg max-w-md mx-auto">
+      <h3 class="text-yellow-400 font-semibold mb-3">Development Controls</h3>
+      <div class="flex justify-center gap-4">
+        <a href="/dev/clear-cache" 
+           class="px-3 py-1 bg-amber-700 hover:bg-amber-600 text-white rounded text-sm transition-colors duration-200">
+          Clear Cache
+        </a>
+        <a href="/dev/reset-db" 
+           onclick="return confirm('This will delete all data in the database. Are you sure?')"
+           class="px-3 py-1 bg-red-700 hover:bg-red-600 text-white rounded text-sm transition-colors duration-200">
+          Reset Database
+        </a>
+      </div>
+    </div>
+    {{/if}}
+  </footer>
   
-  {{#includeFrameSDK}}
-  <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk/dist/index.min.js"></script>
   <script>
-    frame.sdk.actions.ready();
+    // Initialize Frame SDK if available
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.sdk && typeof window.sdk.actions?.ready === 'function') {
+        console.log('Frame SDK available, calling ready()');
+        window.sdk.actions.ready();
+      } else {
+        console.log('Frame SDK not available, running in browser mode');
+      }
+    });
   </script>
-  {{/includeFrameSDK}}
 </body>
 </html> 

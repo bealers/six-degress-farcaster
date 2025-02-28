@@ -25,7 +25,7 @@ export class Database {
   private sqlite?: sqlite3.Database;
   private isDev: boolean;
   private isInitialized: boolean = false;
-  private initPromise: Promise<void> | null = null;
+  private _initPromise: Promise<void> | null = null;
 
   constructor(url?: string, authToken?: string) {
     this.isDev = process.env.NODE_ENV !== 'production';
@@ -45,28 +45,77 @@ export class Database {
     }
   }
 
-  async init() {
+  async init(): Promise<void> {
+    // If already initialized, return immediately
     if (this.isInitialized) {
-      console.log('[DATABASE] Database already initialized');
+      console.log('[DATABASE] Already initialized, skipping');
       return;
     }
-
-    if (this.initPromise) {
-      console.log('[DATABASE] Database initialization already in progress, waiting...');
-      return this.initPromise;
-    }
-
-    console.log('[DATABASE] Starting database initialization');
-    this.initPromise = this._initInternal();
     
+    console.log('[DATABASE] Starting database initialization');
+
     try {
-      await this.initPromise;
-      this.isInitialized = true;
+      // Check if tables already exist before creating them
+      const tablesExist = await this.checkTablesExist();
+      
+      if (tablesExist) {
+        console.log('[DATABASE] Tables already exist, skipping initialization');
+      } else {
+        console.log('[DATABASE] Creating database tables...');
+        await this.createTables();
+        console.log('[DATABASE] All tables created successfully');
+      }
+      
       console.log('[DATABASE] Database initialization completed');
-    } catch (err) {
-      console.error('[DATABASE] Initialization failed:', err);
-      this.initPromise = null; // Reset to allow retry
-      throw err;
+      this.isInitialized = true; // Mark as initialized
+    } catch (error) {
+      console.error('[DATABASE] Error initializing database:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if the required tables already exist
+   */
+  private async checkTablesExist(): Promise<boolean> {
+    try {
+      let searchesExists = false;
+      let connectionsExists = false;
+      
+      if (this.isDev && this.sqlite) {
+        // SQLite check
+        const tables = await this.sqliteAll(
+          "SELECT name FROM sqlite_master WHERE type='table' AND (name='searches' OR name='connections')"
+        ) as Array<{name: string}>;
+        
+        searchesExists = tables.some(t => t.name === 'searches');
+        connectionsExists = tables.some(t => t.name === 'connections');
+      } else if (!this.isDev && this.client) {
+        // Turso check
+        try {
+          const searchesResult = await this.client.execute("SELECT 1 FROM searches LIMIT 1");
+          searchesExists = true;
+        } catch (e) {
+          // Table doesn't exist
+          searchesExists = false;
+        }
+        
+        try {
+          const connectionsResult = await this.client.execute("SELECT 1 FROM connections LIMIT 1");
+          connectionsExists = true;
+        } catch (e) {
+          // Table doesn't exist
+          connectionsExists = false;
+        }
+      }
+      
+      const result = searchesExists || connectionsExists;
+      console.log(`[DATABASE] Tables exist check: searches=${searchesExists}, connections=${connectionsExists}, result=${result}`);
+      return result;
+    } catch (error) {
+      console.error('[DATABASE] Error checking if tables exist:', error);
+      // Assume tables don't exist if we encounter an error
+      return false;
     }
   }
 
@@ -92,7 +141,10 @@ export class Database {
     });
   }
 
-  private async _initInternal() {
+  /**
+   * Create database tables
+   */
+  private async createTables(): Promise<void> {
     console.log('[DATABASE] Creating database tables...');
     
     const createSearchesTable = `
@@ -132,22 +184,37 @@ export class Database {
         await this.client.execute(createSearchesTable);
         console.log('[DATABASE] Creating connections table...');
         await this.client.execute(createConnectionsTable);
+        console.log('[DATABASE] Tables created');
       } else {
         throw new Error('Database not properly initialized');
       }
-      
-      console.log('[DATABASE] All tables created successfully');
     } catch (error) {
       console.error('[DATABASE] Error creating tables:', error);
       throw error;
     }
   }
 
-  // Ensure DB is initialized before any query
+  /**
+   * Ensure database is initialized before performing operations
+   */
   private async ensureInitialized() {
-    if (!this.isInitialized) {
+    // Check if already initialized or initialization in progress
+    if (this.isInitialized) {
+      return; // Already initialized, no need to continue
+    }
+    
+    if (!this._initPromise) {
       console.log('[DATABASE] Auto-initializing database before query');
-      await this.init();
+      this._initPromise = this.init();
+    }
+    
+    try {
+      await this._initPromise;
+      this.isInitialized = true; // Mark as initialized after successful initialization
+    } catch (error) {
+      console.error('[DATABASE] Error during initialization:', error);
+      this._initPromise = null; // Reset promise so we can try again
+      throw error;
     }
   }
 
@@ -333,7 +400,7 @@ export class Database {
     }
   }
 
-  // Helper method to clear database (useful for development)
+  // Helper method to clear database
   async clear() {
     await this.ensureInitialized();
     
@@ -348,6 +415,57 @@ export class Database {
       `;
 
       await this.sqliteRun(sql);
+    }
+  }
+
+  /**
+   * Get stored connections for a user
+   * @param fid The user's FID
+   * @returns Array of connected FIDs
+   */
+  async getStoredConnections(fid: number): Promise<number[]> {
+    try {
+      // Ensure database is initialized
+      await this.ensureInitialized();
+      
+      const query = `
+        SELECT to_fid FROM connections
+        WHERE from_fid = ?
+      `;
+      
+      if (this.client) {
+        // For Turso
+        const result = await this.client.execute({
+          sql: query,
+          args: [fid]
+        });
+        
+        return result.rows.map(row => Number(row.to_fid));
+      } else if (this.sqlite) {
+        // This else-if block handles SQLite database connections in development mode
+        // First we check if this.sqlite exists, indicating SQLite is being used
+        // However, there's a redundant null check here since we're already inside
+        // an if(this.sqlite) block. The inner if(!this.sqlite) can never be true
+        // because we already confirmed this.sqlite exists in the outer condition.
+        // This appears to be defensive programming but is logically unnecessary.
+        // If SQLite isn't initialized, we log an error and return empty array
+        if (!this.sqlite) {
+          console.error('[DATABASE] SQLite not initialized in getStoredConnections');
+          return [];
+        }
+        
+        return new Promise((resolve, reject) => {
+          this.sqlite!.all(query, [fid], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows.map((row: any) => Number(row.to_fid)));
+          });
+        });
+      }
+      
+      return [];
+    } catch (error) {
+      console.error(`[DATABASE] Error getting connections for FID ${fid}:`, error);
+      return [];
     }
   }
 } 
